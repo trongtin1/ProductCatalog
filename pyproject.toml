@@ -1,0 +1,32 @@
+[project]
+name = "productcatalog"
+version = "0.1.0"
+description = "Book Management API with FastAPI, SQLAlchemy, Alembic, Service and Repository layers"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "alembic>=1.20.1",
+    "fastapi>=0.161.1",
+    "psycopg2-binary>=2.9.13",
+    "pydantic>=2.14.1",
+    "pydantic-settings>=2.16.1",
+    "python-multipart>=0.0.32",
+    "redis>=8.1.0",
+    "sqlalchemy>=2.1.6",
+    "uvicorn[standard]>=0.54.0",
+]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=9.1.1",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[tool.uv.workspace]
+members = [
+    "migrations",
+]
