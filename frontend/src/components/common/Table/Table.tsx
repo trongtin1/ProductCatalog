@@ -1,5 +1,4 @@
 import type { TableProps, ColumnType } from './Table.types'
-import { TableFilterDropdown } from './TableFilterDropdown'
 import { Loading } from '../Loading'
 import './Table.css'
 
@@ -12,44 +11,21 @@ export function Table<T>({
   sortColumn,
   isAscending = true,
   onSortChange,
-  onClearSort,
   onRowClick,
   className = '',
 }: TableProps<T>) {
   const getRowKey = (record: T, index: number): string | number => {
-    if (typeof rowKey === 'function') {
-      return rowKey(record)
-    }
-    const val = (record as Record<string, unknown>)[rowKey as string]
-    if (typeof val === 'string' || typeof val === 'number') {
-      return val
-    }
-    return index
+    if (typeof rowKey === 'function') return rowKey(record)
+
+    const value = (record as Record<string, unknown>)[rowKey as string]
+    return typeof value === 'string' || typeof value === 'number' ? value : index
   }
 
-  const handleHeaderClick = (col: ColumnType<T>) => {
-    if (!col.sortable || !onSortChange) return
-    const targetKey = col.sortKey || (col.dataIndex as string) || col.key
-    if (sortColumn === targetKey) {
-      onSortChange(targetKey, !isAscending)
-    } else {
-      onSortChange(targetKey, true)
-    }
-  }
+  const handleHeaderClick = (column: ColumnType<T>) => {
+    if (!column.sortable || !onSortChange) return
 
-  const handleDropdownSort = (columnKey: string, asc: boolean) => {
-    if (onSortChange) {
-      onSortChange(columnKey, asc)
-    }
-  }
-
-  const handleClearSort = () => {
-    if (onClearSort) {
-      onClearSort()
-    } else if (onSortChange) {
-      // Default fallback: reset sort to id ascending
-      onSortChange('id', true)
-    }
+    const sortKey = column.sortKey || (column.dataIndex as string) || column.key
+    onSortChange(sortKey, sortColumn === sortKey ? !isAscending : true)
   }
 
   return (
@@ -57,51 +33,36 @@ export function Table<T>({
       <table className="custom-table">
         <thead>
           <tr>
-            {columns.map((col) => {
-              const targetKey = col.sortKey || (col.dataIndex as string) || col.key
-              const isSorted = Boolean(col.sortable && sortColumn === targetKey)
-              const showDropdown = col.showFilterDropdown !== false && col.sortable
+            {columns.map((column) => {
+              const sortKey = column.sortKey || (column.dataIndex as string) || column.key
+              const isSorted = Boolean(column.sortable && sortColumn === sortKey)
 
               return (
                 <th
-                  key={col.key}
-                  style={{
-                    width: col.width,
-                    textAlign: col.align || 'left',
-                  }}
-                  className={col.sortable ? 'sortable' : ''}
-                  onClick={() => handleHeaderClick(col)}
+                  key={column.key}
+                  style={{ width: column.width, textAlign: column.align || 'left' }}
+                  className={column.sortable ? 'sortable' : ''}
+                  onClick={() => handleHeaderClick(column)}
                 >
                   <div
                     className="custom-table-th-content"
                     style={{
                       justifyContent:
-                        col.align === 'right'
+                        column.align === 'right'
                           ? 'flex-end'
-                          : col.align === 'center'
-                          ? 'center'
-                          : 'space-between',
+                          : column.align === 'center'
+                            ? 'center'
+                            : 'space-between',
                     }}
                   >
-                    <div className="custom-table-th-title">
-                      <span>{col.title}</span>
-                      {col.sortable && !showDropdown && (
+                    <span className="custom-table-th-title">
+                      {column.title}
+                      {column.sortable && (
                         <span className={`custom-table-sort-icon ${isSorted ? 'active' : ''}`}>
                           {isSorted ? (isAscending ? '▲' : '▼') : '↕'}
                         </span>
                       )}
-                    </div>
-
-                    {showDropdown && (
-                      <TableFilterDropdown
-                        columnTitle={col.title}
-                        columnKey={targetKey}
-                        isSorted={isSorted}
-                        isAscending={isAscending}
-                        onSort={handleDropdownSort}
-                        onClearSort={handleClearSort}
-                      />
-                    )}
+                    </span>
                   </div>
                 </th>
               )
@@ -124,30 +85,25 @@ export function Table<T>({
               </td>
             </tr>
           ) : (
-            dataSource.map((record, index) => {
-              const key = getRowKey(record, index)
-              return (
-                <tr
-                  key={key}
-                  style={{ cursor: onRowClick ? 'pointer' : 'default' }}
-                  onClick={() => onRowClick && onRowClick(record)}
-                >
-                  {columns.map((col) => {
-                    const value = col.dataIndex
-                      ? (record as Record<string, unknown>)[col.dataIndex as string]
-                      : undefined
-                    return (
-                      <td
-                        key={col.key}
-                        style={{ textAlign: col.align || 'left' }}
-                      >
-                        {col.render ? col.render(value, record, index) : (value as React.ReactNode)}
-                      </td>
-                    )
-                  })}
-                </tr>
-              )
-            })
+            dataSource.map((record, index) => (
+              <tr
+                key={getRowKey(record, index)}
+                style={{ cursor: onRowClick ? 'pointer' : 'default' }}
+                onClick={() => onRowClick?.(record)}
+              >
+                {columns.map((column) => {
+                  const value = column.dataIndex
+                    ? (record as Record<string, unknown>)[column.dataIndex as string]
+                    : undefined
+
+                  return (
+                    <td key={column.key} style={{ textAlign: column.align || 'left' }}>
+                      {column.render ? column.render(value, record, index) : (value as React.ReactNode)}
+                    </td>
+                  )
+                })}
+              </tr>
+            ))
           )}
         </tbody>
       </table>
