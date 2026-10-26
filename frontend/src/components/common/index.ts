@@ -10,3 +10,4 @@ export * from './Pagination'
 export * from './Modal'
 export * from './ConfirmModal'
 export * from './Toast'
+export { Form } from "./Form";
