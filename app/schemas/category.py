@@ -54,6 +54,7 @@ class Category(CategoryInDBBase):
 
 class PaginatedCategoriesResponse(BaseModel):
     items: list[Category]
+    total: int
+    page: int
     page_size: int
-    next_cursor: Optional[str] = None
-    has_more: bool
+    total_pages: int

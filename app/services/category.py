@@ -1,4 +1,5 @@
 
+import math
 from typing import Optional
 
 from fastapi import status
@@ -24,7 +25,7 @@ class CategoryService:
         self,
         query: CategoryQueryResource,
     ) -> Result[PaginatedCategoriesResponse]:
-        items, has_more = self.category_repo.list_categories(query)
+        items, total = self.category_repo.list_categories(query)
 
         data = [
             CategorySchema.model_validate(item)
@@ -34,17 +35,10 @@ class CategoryService:
         return Result.success(
             data=PaginatedCategoriesResponse(
                 items=data,
+                total=total,
+                page=query.page,
                 page_size=query.page_size,
-                has_more=has_more,
-                next_cursor=(
-                    self.category_repo.encode_cursor(
-                        items[-1],
-                        (query.sort_column_by or "id").lower(),
-                        query.is_sort_column_ascending,
-                    )
-                    if has_more and items
-                    else None
-                ),
+                total_pages=math.ceil(total / query.page_size),
             ),
             message="Categories retrieved successfully",
         )

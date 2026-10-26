@@ -29,39 +29,21 @@ export class BaseFilter {
 
 export function useBaseFilters() {
   const [searchParams, setSearchParams] = useSearchParams()
-
   const filters = new BaseFilter(searchParams)
 
   const updateFilters = (updates: Record<string, string | number | undefined | null>) => {
     const next = new URLSearchParams(searchParams)
-
     Object.entries(updates).forEach(([key, value]) => {
-      if (value === undefined || value === null || value === '') {
-        next.delete(key)
-      } else {
-        next.set(key, String(value))
-      }
+      if (value === undefined || value === null || value === '') next.delete(key)
+      else next.set(key, String(value))
     })
-
     setSearchParams(next)
   }
 
-  const resetFilters = () => {
-    setSearchParams(new URLSearchParams())
-  }
-
-  const onPageChange = (nextPage: number) => {
-    updateFilters({ page: nextPage })
-  }
-
-  const onPageSizeChange = (nextPageSize: number) => {
-    updateFilters({ page_size: nextPageSize, page: 1 })
-  }
-
-  const onSearchChange = (nextSearch: string) => {
-    updateFilters({ search: nextSearch || undefined, page: 1 })
-  }
-
+  const resetFilters = () => setSearchParams(new URLSearchParams())
+  const onPageChange = (page: number) => updateFilters({ page })
+  const onPageSizeChange = (pageSize: number) => updateFilters({ page_size: pageSize, page: 1 })
+  const onSearchChange = (search: string) => updateFilters({ search: search || undefined, page: 1 })
   const onSortChange = (column: string, isAscending: boolean) => {
     updateFilters({
       sort_column_by: column,

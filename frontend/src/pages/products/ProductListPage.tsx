@@ -65,9 +65,9 @@ export const ProductListPage: React.FC = () => {
       await deleteMutation.mutateAsync(productToDelete.id);
       toast.success(`Đã xóa sản phẩm "${productToDelete.name}" thành công!`);
       setProductToDelete(null);
-      // If we just deleted the only item on the current page (and not page 1), go back 1 page
+      // Return to the previous page if its last item was deleted.
       if (data && data.items.length === 1 && filter.page > 1) {
-        filter.updateFilters({ page: filter.page - 1 });
+        filter.onPageChange(filter.page - 1);
       }
     } catch (err: unknown) {
       const errMsg =
@@ -353,12 +353,12 @@ export const ProductListPage: React.FC = () => {
         }
       />
 
-      {/* Pagination component */}
+      {/* Pagination */}
       {data && (
         <div style={{ marginTop: 16 }}>
           <Pagination
             page={data.page}
-            pageSize={data.page_size || filter.pageSize}
+            pageSize={data.page_size}
             total={data.total}
             totalPages={data.total_pages}
             onPageChange={filter.onPageChange}

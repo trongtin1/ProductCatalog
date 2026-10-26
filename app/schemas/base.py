@@ -6,10 +6,7 @@ T = TypeVar("T")
 
 
 class QueryResource(BaseModel):
-    cursor: Optional[str] = Field(
-        default=None,
-        description="Opaque cursor returned by the previous request",
-    )
+    page: int = Field(default=1, ge=1, description="Page number (starts from 1)")
     page_size: int = Field(
         default=10,
         ge=1,
