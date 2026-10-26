@@ -53,7 +53,7 @@ class ProductRepository(BaseRepository[Product]):
 
         # Sorting
         sort_column = self.SORTABLE_COLUMNS.get(
-            (query.sort_column_by | "id").lower()
+            (query.sort_column_by or "id").lower()
         )
 
         order = (
