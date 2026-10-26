@@ -55,7 +55,7 @@ scripts/
 tests/
 └── test_api.py               # Bộ test tự động (pytest) — dùng DB PostgreSQL riêng `product_catalog_test`
 Dockerfile                    # Dockerfile cho backend (sử dụng uv)
-docker-compose.yml            # Docker Compose gồm postgres, redis, backend
+docker-compose.yml            # Docker Compose gồm postgres, redis, backend, frontend
 .env.example                  # File cấu hình mẫu
 ```
 
@@ -104,11 +104,14 @@ API Docs:
 
 ### Cách 2: Chạy bằng Docker Compose
 
-Chạy toàn bộ hệ thống (PostgreSQL, Redis, Backend — tự migrate & seed dữ liệu):
+Chạy toàn bộ hệ thống (PostgreSQL, Redis, Backend và Frontend — backend tự migrate & seed dữ liệu):
 
 ```bash
 docker compose up --build
 ```
+
+- Frontend: `http://localhost:3000`
+- API: `http://localhost:8000`
 
 ---
 
