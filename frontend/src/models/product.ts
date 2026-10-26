@@ -44,9 +44,10 @@ export type Product = ProductResponse
 // PaginatedProductsResponse
 export interface PaginatedProductsResponse {
   items: ProductResponse[]
+  total: number
+  page: number
   page_size: number
-  next_cursor: string | null
-  has_more: boolean
+  total_pages: number
 }
 
 // ProductQueryResource(QueryResource)
