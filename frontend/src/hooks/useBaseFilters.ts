@@ -2,14 +2,14 @@ import { useSearchParams } from 'react-router-dom'
 import type { QueryResource } from '../models/result'
 
 export class BaseFilter {
-  page: number
+  cursor?: string
   pageSize: number
   search: string
   sortColumnBy: string
   ascending: boolean
 
   constructor(searchParams: URLSearchParams) {
-    this.page = Math.max(1, Number(searchParams.get('page')) || 1)
+    this.cursor = searchParams.get('cursor') || undefined
     this.pageSize = Number(searchParams.get('page_size')) || 10
     this.search = searchParams.get('search') || ''
     this.sortColumnBy = searchParams.get('sort_column_by') || 'id'
@@ -18,7 +18,7 @@ export class BaseFilter {
 
   toQuery(): QueryResource {
     return {
-      page: this.page,
+      cursor: this.cursor,
       page_size: this.pageSize,
       search_term: this.search || undefined,
       sort_column_by: this.sortColumnBy,
@@ -50,23 +50,23 @@ export function useBaseFilters() {
     setSearchParams(new URLSearchParams())
   }
 
-  const onPageChange = (nextPage: number) => {
-    updateFilters({ page: nextPage })
+  const onCursorChange = (cursor?: string) => {
+    updateFilters({ cursor })
   }
 
   const onPageSizeChange = (nextPageSize: number) => {
-    updateFilters({ page_size: nextPageSize, page: 1 })
+    updateFilters({ page_size: nextPageSize, cursor: undefined })
   }
 
   const onSearchChange = (nextSearch: string) => {
-    updateFilters({ search: nextSearch || undefined, page: 1 })
+    updateFilters({ search: nextSearch || undefined, cursor: undefined })
   }
 
   const onSortChange = (column: string, isAscending: boolean) => {
     updateFilters({
       sort_column_by: column,
       is_sort_column_ascending: String(isAscending),
-      page: 1,
+      cursor: undefined,
     })
   }
 
@@ -76,7 +76,7 @@ export function useBaseFilters() {
     ...filters,
     updateFilters,
     resetFilters,
-    onPageChange,
+    onCursorChange,
     onPageSizeChange,
     onSearchChange,
     onSortChange,
