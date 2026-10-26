@@ -10,6 +10,7 @@ from app.schemas.category import (
     CategoryCreate,
     CategoryUpdate,
     CategoryQueryResource,
+    PaginatedCategoriesResponse,
 )
 from app.schemas.base import Result
 from app.core.redis import RedisCacheService
@@ -22,8 +23,8 @@ class CategoryService:
     def list_categories(
         self,
         query: CategoryQueryResource,
-    ) -> Result[list[CategorySchema]]:
-        items, total = self.category_repo.list_categories(query)
+    ) -> Result[PaginatedCategoriesResponse]:
+        items, has_more = self.category_repo.list_categories(query)
 
         data = [
             CategorySchema.model_validate(item)
@@ -31,8 +32,21 @@ class CategoryService:
         ]
 
         return Result.success(
-            data=data,
-            message=f"Retrieved {total} categories successfully",
+            data=PaginatedCategoriesResponse(
+                items=data,
+                page_size=query.page_size,
+                has_more=has_more,
+                next_cursor=(
+                    self.category_repo.encode_cursor(
+                        items[-1],
+                        (query.sort_column_by or "id").lower(),
+                        query.is_sort_column_ascending,
+                    )
+                    if has_more and items
+                    else None
+                ),
+            ),
+            message="Categories retrieved successfully",
         )
 
     def get_category(

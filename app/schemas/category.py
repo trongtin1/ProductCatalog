@@ -50,3 +50,10 @@ class CategoryInDBBase(CategoryBase):
 
 class Category(CategoryInDBBase):
     pass
+
+
+class PaginatedCategoriesResponse(BaseModel):
+    items: list[Category]
+    page_size: int
+    next_cursor: Optional[str] = None
+    has_more: bool

@@ -60,10 +60,23 @@ def test_categories_crud():
     assert get_res.status_code == 200
     assert get_res.json()["data"]["name"] == "Electronics"
 
-    # 5. List
-    list_res = client.get("/api/v1/categories/")
+    # 5. List with cursor pagination
+    second_category = client.post(
+        "/api/v1/categories/",
+        json={"name": "Home Appliances"},
+    )
+    assert second_category.status_code == 201
+    list_res = client.get("/api/v1/categories/?page_size=1")
     assert list_res.status_code == 200
-    assert len(list_res.json()["data"]) == 1
+    list_data = list_res.json()["data"]
+    assert len(list_data["items"]) == 1
+    assert list_data["has_more"] is True
+    assert list_data["next_cursor"]
+    next_page = client.get(
+        f"/api/v1/categories/?page_size=1&cursor={list_data['next_cursor']}"
+    )
+    assert next_page.status_code == 200
+    assert next_page.json()["data"]["items"][0]["id"] != list_data["items"][0]["id"]
 
     # 6. Update
     up_res = client.put(f"/api/v1/categories/{cat_id}", json={"description": "Updated gadgets"})
@@ -157,15 +170,19 @@ def test_products_crud_and_search_pagination():
     assert detail.json()["data"]["name"] == "iPhone 15 Pro"
     assert "x-cache" in detail.headers
 
-    # 4. List with pagination using QueryResource (page, page_size)
-    list_res = client.get("/api/v1/products/?page=1&page_size=1")
+    # 4. List with cursor pagination
+    list_res = client.get("/api/v1/products/?page_size=1")
     assert list_res.status_code == 200
     res_data = list_res.json()["data"]
-    assert res_data["total"] == 2
-    assert res_data["page"] == 1
     assert res_data["page_size"] == 1
-    assert res_data["total_pages"] == 2
     assert len(res_data["items"]) == 1
+    assert res_data["has_more"] is True
+    assert res_data["next_cursor"]
+    next_page = client.get(
+        f"/api/v1/products/?page_size=1&cursor={res_data['next_cursor']}"
+    )
+    assert next_page.status_code == 200
+    assert next_page.json()["data"]["items"][0]["id"] != res_data["items"][0]["id"]
     assert "x-cache" in list_res.headers
 
     # 5. Search keyword using search_term
