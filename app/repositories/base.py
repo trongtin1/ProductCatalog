@@ -2,6 +2,7 @@
 from typing import Any, Generic, TypeVar, Type, Optional, Union
 from collections.abc import Mapping, Sequence
 
+from fastapi import HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy import func
 from sqlalchemy.orm import Session, Query
@@ -122,6 +123,51 @@ class BaseRepository(Generic[ModelType]):
         return query.scalar() or 0
 
     @staticmethod
+    def encode_cursor(
+        item: ModelType,
+        sort_name: str,
+        is_ascending: bool,
+    ) -> str:
+        value = getattr(item, sort_name)
+        if isinstance(value, datetime):
+            value = value.isoformat()
+        payload = {"v": value, "id": item.id, "s": sort_name, "a": is_ascending}
+        return base64.urlsafe_b64encode(
+            json.dumps(payload, separators=(",", ":")).encode()
+        ).decode().rstrip("=")
+
+    @staticmethod
+    def decode_cursor(
+        cursor: str | None,
+        sort_name: str,
+        is_ascending: bool,
+        datetime_sort_fields: set[str],
+    ) -> tuple[object | None, int | None]:
+        if cursor is None:
+            return None, None
+        try:
+            padded = cursor + "=" * (-len(cursor) % 4)
+            payload = json.loads(base64.urlsafe_b64decode(padded).decode())
+            if (
+                payload["s"] != sort_name
+                or payload["a"] != is_ascending
+                or not isinstance(payload["id"], int)
+            ):
+                raise ValueError
+            value = payload["v"]
+            if sort_name in datetime_sort_fields:
+                value = datetime.fromisoformat(value)
+            return value, payload["id"]
+        except (
+            KeyError, TypeError, ValueError, UnicodeDecodeError,
+            binascii.Error, json.JSONDecodeError,
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="Invalid cursor",
+            )
+
+    @staticmethod
     def _get_data(
         obj_in: Union[BaseModel, Mapping[str, Any]],
         exclude_unset: bool = False,
@@ -137,3 +183,7 @@ class BaseRepository(Generic[ModelType]):
         except Exception:
             self.db.rollback()
             raise
+import base64
+import binascii
+import json
+from datetime import datetime

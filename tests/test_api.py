@@ -183,6 +183,18 @@ def test_products_crud_and_search_pagination():
     assert next_page.json()["data"]["items"][0]["id"] != res_data["items"][0]["id"]
     assert "x-cache" in list_res.headers
 
+    # 4b. Cursor pagination is available as a separate advanced endpoint.
+    cursor_res = client.get("/api/v1/products/cursor?page_size=1")
+    assert cursor_res.status_code == 200
+    cursor_data = cursor_res.json()["data"]
+    assert cursor_data["has_more"] is True
+    assert cursor_data["next_cursor"]
+    cursor_next = client.get(
+        f"/api/v1/products/cursor?page_size=1&cursor={cursor_data['next_cursor']}"
+    )
+    assert cursor_next.status_code == 200
+    assert cursor_next.json()["data"]["items"][0]["id"] != cursor_data["items"][0]["id"]
+
     # 5. Search keyword using search_term
     search_res = client.get("/api/v1/products/?search_term=titanium")
     assert search_res.status_code == 200
