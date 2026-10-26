@@ -23,6 +23,14 @@ export interface Category extends CategoryBase {
   created_at: string
 }
 
+export interface PaginatedCategoriesResponse {
+  items: Category[]
+  total: number
+  page: number
+  page_size: number
+  total_pages: number
+}
+
 // CategoryQueryResource(QueryResource)
 export interface CategoryQueryResource extends QueryResource {
   name?: string

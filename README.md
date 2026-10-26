@@ -165,10 +165,10 @@ cp .env.example .env
 ### 2. Products (`/api/v1/products`)
 
 - `GET /api/v1/products/`: Danh sách sản phẩm kết hợp:
-  - **Cursor pagination:** `page_size` (default 10, max 100); dùng `next_cursor` từ response trước làm tham số `cursor` cho trang tiếp theo.
+  - **Phân trang:** `page` (default 1), `page_size` (default 10, max 100). Response gồm `items`, `total`, `page`, `page_size`, `total_pages`.
   - **Tìm kiếm:** `search_term` (tìm trong name và description).
   - **Bộ lọc:** `category_id`, `min_price`, `max_price`.
-  - **Sắp xếp:** `sort_column_by` (`id`, `price`, `name`, `stock`, `category_id`, `created_at`, `updated_at`), `is_sort_column_ascending` (true/false). Khi dùng `cursor`, giữ nguyên hai tham số sắp xếp và các bộ lọc của request trước.
+  - **Sắp xếp:** `sort_column_by` (`id`, `price`, `name`, `stock`, `category_id`, `created_at`, `updated_at`), `is_sort_column_ascending` (true/false).
   - **Redis Cache:** Response kèm header `X-Cache: HIT` hoặc `X-Cache: MISS`.
 - `GET /api/v1/products/{product_id}`: Chi tiết sản phẩm (Cache Redis 60s, header `X-Cache: HIT/MISS`).
 - `POST /api/v1/products/`: Tạo sản phẩm (validate `price > 0`, `stock >= 0`, `name` không rỗng; tự động xóa cache).

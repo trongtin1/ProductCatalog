@@ -1,13 +1,9 @@
 
-import base64
-import binascii
-import json
-from datetime import datetime
 from typing import Any, Generic, TypeVar, Type, Optional, Union
 from collections.abc import Mapping, Sequence
 
-from fastapi import HTTPException, status
 from pydantic import BaseModel
+from sqlalchemy import func
 from sqlalchemy.orm import Session, Query
 from sqlalchemy.sql.elements import ColumnElement
 
@@ -58,6 +54,7 @@ class BaseRepository(Generic[ModelType]):
         filters: Optional[Sequence[ColumnElement[bool]]] = None,
         options: Optional[Sequence[Any]] = None,
         order_by: Optional[Sequence[Any]] = None,
+        skip: int = 0,
         limit: Optional[int] = None,
     ) -> list[ModelType]:
         query = self.prepare_query(
@@ -65,6 +62,9 @@ class BaseRepository(Generic[ModelType]):
             options=options,
             order_by=order_by,
         )
+
+        if skip > 0:
+            query = query.offset(skip)
 
         if limit is not None:
             query = query.limit(limit)
@@ -110,61 +110,16 @@ class BaseRepository(Generic[ModelType]):
         self.db.delete(db_obj)
         self._commit()
 
-    @staticmethod
-    def encode_cursor(
-        item: ModelType,
-        sort_name: str,
-        is_ascending: bool,
-    ) -> str:
-        value = getattr(item, sort_name)
-        if isinstance(value, datetime):
-            value = value.isoformat()
+    def count(
+        self,
+        filters: Optional[Sequence[ColumnElement[bool]]] = None,
+    ) -> int:
+        query = self.db.query(func.count()).select_from(self.model)
 
-        payload = {
-            "v": value,
-            "id": item.id,
-            "s": sort_name,
-            "a": is_ascending,
-        }
-        encoded = json.dumps(payload, separators=(",", ":")).encode()
-        return base64.urlsafe_b64encode(encoded).decode().rstrip("=")
+        if filters:
+            query = query.filter(*filters)
 
-    @staticmethod
-    def _decode_cursor(
-        cursor: str | None,
-        sort_name: str,
-        is_ascending: bool,
-        datetime_sort_fields: set[str],
-    ) -> tuple[object | None, int | None]:
-        if cursor is None:
-            return None, None
-
-        try:
-            padded = cursor + "=" * (-len(cursor) % 4)
-            payload = json.loads(base64.urlsafe_b64decode(padded).decode())
-            if (
-                payload["s"] != sort_name
-                or payload["a"] != is_ascending
-                or not isinstance(payload["id"], int)
-            ):
-                raise ValueError
-
-            value = payload["v"]
-            if sort_name in datetime_sort_fields:
-                value = datetime.fromisoformat(value)
-            return value, payload["id"]
-        except (
-            KeyError,
-            TypeError,
-            ValueError,
-            UnicodeDecodeError,
-            binascii.Error,
-            json.JSONDecodeError,
-        ):
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail="Invalid cursor",
-            )
+        return query.scalar() or 0
 
     @staticmethod
     def _get_data(

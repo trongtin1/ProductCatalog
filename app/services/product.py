@@ -1,5 +1,6 @@
 
 import json
+import math
 
 from fastapi import status
 
@@ -32,7 +33,7 @@ class ProductService:
         query: ProductQueryResource,
     ) -> tuple[Result[PaginatedProductsResponse], bool]:
         cache_key = (
-            f"products:list:cursor={query.cursor}:size={query.page_size}:"
+            f"products:list:page={query.page}:size={query.page_size}:"
             f"search={query.search_term}:cat={query.category_id}:"
             f"min={query.min_price}:max={query.max_price}:"
             f"sort={query.sort_column_by}:"
@@ -59,7 +60,7 @@ class ProductService:
                 # Invalid cache data: fall back to database
                 pass
 
-        items, has_more = self.product_repo.list_products(query)
+        items, total = self.product_repo.list_products(query)
 
         item_schemas = [
             ProductResponse.model_validate(item)
@@ -68,17 +69,10 @@ class ProductService:
 
         response_data = PaginatedProductsResponse(
             items=item_schemas,
+            total=total,
+            page=query.page,
             page_size=query.page_size,
-            has_more=has_more,
-            next_cursor=(
-                self.product_repo.encode_cursor(
-                    items[-1],
-                    (query.sort_column_by or "id").lower(),
-                    query.is_sort_column_ascending,
-                )
-                if has_more and items
-                else None
-            ),
+            total_pages=math.ceil(total / query.page_size),
         )
 
         RedisCacheService.set(
