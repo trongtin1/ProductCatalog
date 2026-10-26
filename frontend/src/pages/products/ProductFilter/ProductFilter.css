@@ -1,0 +1,50 @@
+.product-filter-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow-sm);
+}
+
+.product-filter-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.product-filter-search {
+  flex: 1;
+  min-width: 260px;
+}
+
+.product-filter-bottom {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.product-filter-item {
+  width: 180px;
+}
+
+.product-filter-price-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.product-filter-price-input {
+  width: 130px;
+}
+
+.product-filter-separator {
+  color: var(--color-text-muted);
+  font-size: 13px;
+}

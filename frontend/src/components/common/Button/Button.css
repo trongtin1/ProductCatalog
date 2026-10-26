@@ -1,0 +1,106 @@
+.custom-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-weight: 500;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.custom-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Sizes */
+.custom-btn-sm {
+  padding: 4px 10px;
+  font-size: 12px;
+  height: 28px;
+}
+
+.custom-btn-md {
+  padding: 6px 14px;
+  font-size: 13px;
+  height: 36px;
+}
+
+.custom-btn-lg {
+  padding: 10px 18px;
+  font-size: 15px;
+  height: 42px;
+}
+
+/* Variants */
+.custom-btn-primary {
+  background-color: var(--color-primary);
+  color: #ffffff;
+  border-color: var(--color-primary);
+}
+
+.custom-btn-primary:hover:not(:disabled) {
+  background-color: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+}
+
+.custom-btn-secondary {
+  background-color: #f1f5f9;
+  color: var(--color-text-primary);
+  border-color: var(--color-border);
+}
+
+.custom-btn-secondary:hover:not(:disabled) {
+  background-color: #e2e8f0;
+}
+
+.custom-btn-danger {
+  background-color: var(--color-danger);
+  color: #ffffff;
+  border-color: var(--color-danger);
+}
+
+.custom-btn-danger:hover:not(:disabled) {
+  background-color: var(--color-danger-hover);
+}
+
+.custom-btn-outline {
+  background-color: transparent;
+  color: var(--color-text-primary);
+  border-color: var(--color-border);
+}
+
+.custom-btn-outline:hover:not(:disabled) {
+  background-color: #f8fafc;
+  border-color: var(--color-border-hover);
+}
+
+.custom-btn-ghost {
+  background-color: transparent;
+  color: var(--color-text-secondary);
+}
+
+.custom-btn-ghost:hover:not(:disabled) {
+  background-color: #f1f5f9;
+  color: var(--color-text-primary);
+}
+
+/* Spinner */
+.custom-btn-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

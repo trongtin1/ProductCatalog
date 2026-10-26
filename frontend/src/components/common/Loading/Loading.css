@@ -1,0 +1,48 @@
+.custom-loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  gap: 12px;
+  width: 100%;
+}
+
+.custom-loading-container.full-page {
+  min-height: 300px;
+}
+
+.custom-spinner {
+  border: 3px solid #e2e8f0;
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: loading-spin 0.8s linear infinite;
+}
+
+.custom-spinner-sm {
+  width: 20px;
+  height: 20px;
+  border-width: 2px;
+}
+
+.custom-spinner-md {
+  width: 32px;
+  height: 32px;
+}
+
+.custom-spinner-lg {
+  width: 48px;
+  height: 48px;
+  border-width: 4px;
+}
+
+.custom-loading-tip {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+@keyframes loading-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
