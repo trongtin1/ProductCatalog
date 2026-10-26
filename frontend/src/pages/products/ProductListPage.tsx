@@ -379,7 +379,14 @@ export const ProductListPage: React.FC = () => {
       <ProductFormModal
         isOpen={isFormOpen}
         product={productToEdit}
-        onClose={() => setIsFormOpen(false)}
+        onClose={() => {
+          setIsFormOpen(false);
+          setProductToEdit(null);
+        }}
+        onSuccess={() => {
+          setIsFormOpen(false);
+          setProductToEdit(null);
+        }}
       />
 
       <ConfirmModal
