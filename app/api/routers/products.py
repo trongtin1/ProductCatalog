@@ -8,6 +8,8 @@ from app.schemas.product import (
     ProductUpdate,
     ProductQueryResource,
     PaginatedProductsResponse,
+    CursorProductQueryResource,
+    CursorPaginatedProductsResponse,
 )
 from app.schemas.base import Result
 from app.services.product import ProductService
@@ -26,6 +28,19 @@ def list_products(
     response.headers["X-Cache"] = (
         "HIT" if is_cache_hit else "MISS"
     )
+    response.status_code = result.status_code
+    return result
+
+
+@router.get("/cursor", response_model=Result[CursorPaginatedProductsResponse])
+def list_products_by_cursor(
+    response: Response,
+    query: CursorProductQueryResource = Depends(),
+    service: ProductService = Depends(get_product_service),
+):
+    """Advanced cursor pagination endpoint; the main list endpoint remains offset-based."""
+    result, is_cache_hit = service.list_products_by_cursor(query)
+    response.headers["X-Cache"] = "HIT" if is_cache_hit else "MISS"
     response.status_code = result.status_code
     return result
 

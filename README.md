@@ -175,3 +175,7 @@ cp .env.example .env
 - `PUT /api/v1/products/{product_id}`: Cập nhật toàn bộ thông tin sản phẩm.
 - `PATCH /api/v1/products/{product_id}`: Cập nhật từng phần (partial update).
 - `DELETE /api/v1/products/{product_id}`: Xóa sản phẩm (tự động xóa cache).
+
+### Cursor pagination nâng cao
+
+`GET /api/v1/products/cursor` là endpoint cursor riêng, không được frontend sử dụng. Nó nhận cùng các bộ lọc/sắp xếp với endpoint chính, thêm `cursor` và trả về `items`, `page_size`, `has_more`, `next_cursor`. Endpoint chính `GET /api/v1/products/` vẫn dùng offset pagination theo yêu cầu bắt buộc.

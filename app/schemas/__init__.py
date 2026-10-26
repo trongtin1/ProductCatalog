@@ -6,6 +6,8 @@ from app.schemas.product import (
     ProductResponse,
     ProductQueryResource,
     PaginatedProductsResponse,
+    CursorProductQueryResource,
+    CursorPaginatedProductsResponse,
 )
 
 __all__ = [
@@ -21,4 +23,6 @@ __all__ = [
     "ProductUpdate",
     "ProductQueryResource",
     "PaginatedProductsResponse",
+    "CursorProductQueryResource",
+    "CursorPaginatedProductsResponse",
 ]

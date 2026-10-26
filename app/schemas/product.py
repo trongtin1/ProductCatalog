@@ -11,6 +11,17 @@ class ProductQueryResource(QueryResource):
     max_price: Optional[float] = Field(default=None, ge=0, description="Maximum price filter")
 
 
+class CursorProductQueryResource(BaseModel):
+    cursor: Optional[str] = Field(default=None, description="Cursor from the previous cursor request")
+    page_size: int = Field(default=10, ge=1, le=100)
+    sort_column_by: str = Field(default="id")
+    is_sort_column_ascending: bool = Field(default=True)
+    search_term: Optional[str] = None
+    category_id: Optional[int] = None
+    min_price: Optional[float] = Field(default=None, ge=0)
+    max_price: Optional[float] = Field(default=None, ge=0)
+
+
 class ProductBase(BaseModel):
     name: str = Field(..., min_length=1, description="Product name cannot be empty")
     description: Optional[str] = None
@@ -69,3 +80,10 @@ class PaginatedProductsResponse(BaseModel):
     page: int
     page_size: int
     total_pages: int
+
+
+class CursorPaginatedProductsResponse(BaseModel):
+    items: List[ProductResponse]
+    page_size: int
+    next_cursor: Optional[str] = None
+    has_more: bool

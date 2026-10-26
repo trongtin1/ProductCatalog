@@ -14,6 +14,8 @@ from app.schemas.product import (
     ProductUpdate,
     ProductQueryResource,
     PaginatedProductsResponse,
+    CursorProductQueryResource,
+    CursorPaginatedProductsResponse,
 )
 from app.schemas.base import Result
 from app.core.redis import RedisCacheService
@@ -88,6 +90,42 @@ class ProductService:
             ),
             False,
         )
+
+    def list_products_by_cursor(
+        self,
+        query: CursorProductQueryResource,
+    ) -> tuple[Result[CursorPaginatedProductsResponse], bool]:
+        cache_key = (
+            f"products:cursor:cursor={query.cursor}:size={query.page_size}:"
+            f"search={query.search_term}:cat={query.category_id}:"
+            f"min={query.min_price}:max={query.max_price}:"
+            f"sort={query.sort_column_by}:asc={query.is_sort_column_ascending}"
+        )
+        cached_data = RedisCacheService.get(cache_key)
+        if cached_data:
+            try:
+                data = CursorPaginatedProductsResponse.model_validate(json.loads(cached_data))
+                return Result.success(data=data, message="Products retrieved successfully"), True
+            except (ValueError, TypeError):
+                pass
+
+        items, has_more = self.product_repo.list_products_by_cursor(query)
+        response_data = CursorPaginatedProductsResponse(
+            items=[ProductResponse.model_validate(item) for item in items],
+            page_size=query.page_size,
+            has_more=has_more,
+            next_cursor=(
+                self.product_repo.encode_cursor(
+                    items[-1],
+                    (query.sort_column_by or "id").lower(),
+                    query.is_sort_column_ascending,
+                )
+                if has_more and items
+                else None
+            ),
+        )
+        RedisCacheService.set(cache_key, response_data.model_dump_json(), ttl=60)
+        return Result.success(data=response_data, message="Products retrieved successfully"), False
 
     def get_product(
         self,
