@@ -65,9 +65,9 @@ export const ProductListPage: React.FC = () => {
       await deleteMutation.mutateAsync(productToDelete.id);
       toast.success(`Đã xóa sản phẩm "${productToDelete.name}" thành công!`);
       setProductToDelete(null);
-      // If we just deleted the only item on the current page (and not page 1), go back 1 page
-      if (data && data.items.length === 1 && filter.page > 1) {
-        filter.updateFilters({ page: filter.page - 1 });
+      // A deleted last item can leave a cursor page empty; restart safely.
+      if (data && data.items.length === 1 && filter.cursor) {
+        filter.onCursorChange();
       }
     } catch (err: unknown) {
       const errMsg =
@@ -299,10 +299,10 @@ export const ProductListPage: React.FC = () => {
         maxPrice={filter.maxPrice}
         onSearchChange={filter.onSearchChange}
         onCategoryChange={(catId) => {
-          filter.updateFilters({ category_id: catId, page: 1 });
+          filter.updateFilters({ category_id: catId, cursor: undefined });
         }}
         onPriceRangeChange={(min, max) => {
-          filter.updateFilters({ min_price: min, max_price: max, page: 1 });
+          filter.updateFilters({ min_price: min, max_price: max, cursor: undefined });
         }}
         onReset={filter.resetFilters}
         onAddNew={handleOpenCreate}
@@ -353,15 +353,15 @@ export const ProductListPage: React.FC = () => {
         }
       />
 
-      {/* Pagination component */}
+      {/* Cursor navigation */}
       {data && (
         <div style={{ marginTop: 16 }}>
           <Pagination
-            page={data.page}
-            pageSize={data.page_size || filter.pageSize}
-            total={data.total}
-            totalPages={data.total_pages}
-            onPageChange={filter.onPageChange}
+            itemCount={data.items.length}
+            pageSize={data.page_size}
+            hasMore={data.has_more}
+            onNext={() => filter.onCursorChange(data.next_cursor || undefined)}
+            onReset={filter.cursor ? () => filter.onCursorChange() : undefined}
             onPageSizeChange={filter.onPageSizeChange}
           />
         </div>
