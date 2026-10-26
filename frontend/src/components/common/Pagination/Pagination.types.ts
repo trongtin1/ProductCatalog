@@ -1,10 +1,10 @@
 export interface PaginationProps {
-  itemCount: number
+  page: number
   pageSize: number
-  hasMore: boolean
+  total: number
+  totalPages: number
   pageSizeOptions?: number[]
-  onNext: () => void
-  onReset?: () => void
+  onPageChange: (page: number) => void
   onPageSizeChange?: (pageSize: number) => void
   className?: string
 }
