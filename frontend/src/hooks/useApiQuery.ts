@@ -44,16 +44,18 @@ export function useFetchPaginatedData<TItem, TParams = void>(
   queryKey: string | readonly unknown[],
   fetchFn: (params: TParams) => Promise<ApiResult<{
     items: TItem[]
+    total: number
+    page: number
     page_size: number
-    next_cursor: string | null
-    has_more: boolean
+    total_pages: number
   }>>,
   params: TParams,
   options?: FetchOptions<ApiResult<{
     items: TItem[]
+    total: number
+    page: number
     page_size: number
-    next_cursor: string | null
-    has_more: boolean
+    total_pages: number
   }>>,
 ) {
   return useQuery({

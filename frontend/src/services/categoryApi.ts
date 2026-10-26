@@ -6,14 +6,13 @@ import type {
   CategoryCreate,
   CategoryUpdate,
   CategoryQueryResource,
-  PaginatedCategoriesResponse,
 } from '../models/category'
 
 export const CategoryService = {
-  // Get categories with cursor pagination
+  // Get all categories
   getAll: async (
     request?: CategoryQueryResource,
-  ): Promise<Result<PaginatedCategoriesResponse>> => {
+  ): Promise<Result<Category[]>> => {
     return await axios({
       method: 'get',
       url: '/categories/',

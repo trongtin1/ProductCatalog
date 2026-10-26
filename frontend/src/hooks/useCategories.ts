@@ -15,16 +15,13 @@ export function useCategories(params: CategoryQueryResource = {}) {
     queryKey: categoryKeys.list(params),
 
     queryFn: async () => {
-      const response = await CategoryService.getAll({
-        page_size: 100,
-        ...params,
-      })
+      const response = await CategoryService.getAll(params)
 
       if (!response.is_success || response.data === null) {
         throw new Error(response.message || 'Không thể tải danh mục')
       }
 
-      return response.data.items
+      return response.data
     },
 
     staleTime: 5 * 60 * 1000,

@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { createPortal } from 'react-dom'
 
 export interface TableFilterDropdownProps {
   columnTitle: React.ReactNode
@@ -20,30 +19,11 @@ export const TableFilterDropdown: React.FC<TableFilterDropdownProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
-  const menuRef = useRef<HTMLDivElement>(null)
-  const triggerRef = useRef<HTMLButtonElement>(null)
-  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 })
-
-  const updateMenuPosition = () => {
-    const rect = triggerRef.current?.getBoundingClientRect()
-    if (!rect) return
-
-    const menuWidth = 200
-    setMenuPosition({
-      top: rect.bottom + 6,
-      left: Math.max(8, Math.min(rect.right - menuWidth, window.innerWidth - menuWidth - 8)),
-    })
-  }
 
   // Close when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Node
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(target) &&
-        !menuRef.current?.contains(target)
-      ) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false)
       }
     }
@@ -55,18 +35,13 @@ export const TableFilterDropdown: React.FC<TableFilterDropdownProps> = ({
     }
 
     if (isOpen) {
-      updateMenuPosition()
       document.addEventListener('mousedown', handleClickOutside)
       document.addEventListener('keydown', handleKeyDown)
-      window.addEventListener('resize', updateMenuPosition)
-      window.addEventListener('scroll', updateMenuPosition, true)
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
       document.removeEventListener('keydown', handleKeyDown)
-      window.removeEventListener('resize', updateMenuPosition)
-      window.removeEventListener('scroll', updateMenuPosition, true)
     }
   }, [isOpen])
 
@@ -100,7 +75,6 @@ export const TableFilterDropdown: React.FC<TableFilterDropdownProps> = ({
       <button
         type="button"
         className={`table-filter-trigger ${isSorted ? 'active' : ''}`}
-        ref={triggerRef}
         onClick={toggleDropdown}
         title={`Tùy chọn sắp xếp / lọc cho ${typeof columnTitle === 'string' ? columnTitle : ''}`}
         aria-haspopup="true"
@@ -127,13 +101,8 @@ export const TableFilterDropdown: React.FC<TableFilterDropdownProps> = ({
         )}
       </button>
 
-      {isOpen && createPortal(
-        <div
-          ref={menuRef}
-          className="table-filter-menu"
-          role="menu"
-          style={{ top: menuPosition.top, left: menuPosition.left }}
-        >
+      {isOpen && (
+        <div className="table-filter-menu" role="menu">
           <div className="table-filter-menu-header">
             {columnTitle}
           </div>
@@ -171,8 +140,7 @@ export const TableFilterDropdown: React.FC<TableFilterDropdownProps> = ({
               </button>
             </>
           )}
-        </div>,
-        document.body,
+        </div>
       )}
     </div>
   )
