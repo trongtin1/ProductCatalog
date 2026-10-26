@@ -1,5 +1,5 @@
 from app.schemas.base import QueryResource, Result
-from app.schemas.category import Category, CategoryCreate, CategoryUpdate
+from app.schemas.category import Category, CategoryCreate, CategoryUpdate, PaginatedCategoriesResponse
 from app.schemas.product import (
     ProductCreate,
     ProductUpdate,
@@ -14,6 +14,7 @@ __all__ = [
     "Category",
     "CategoryCreate",
     "CategoryUpdate",
+    "PaginatedCategoriesResponse",
     "Product",
     "ProductResponse",
     "ProductCreate",

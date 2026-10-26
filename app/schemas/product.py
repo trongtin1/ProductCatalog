@@ -65,7 +65,6 @@ class ProductResponse(ProductInDBBase):
 
 class PaginatedProductsResponse(BaseModel):
     items: List[ProductResponse]
-    total: int
-    page: int
     page_size: int
-    total_pages: int
+    next_cursor: Optional[str] = None
+    has_more: bool

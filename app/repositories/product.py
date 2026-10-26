@@ -1,5 +1,6 @@
+from fastapi import HTTPException, status
 from app.schemas.product import ProductQueryResource
-from sqlalchemy import or_, asc, desc
+from sqlalchemy import and_, or_, asc, desc
 from sqlalchemy.orm import Session
 
 from app.models.product import Product
@@ -10,7 +11,6 @@ class ProductRepository(BaseRepository[Product]):
     SORTABLE_COLUMNS = {
         "id": Product.id,
         "name": Product.name,
-        "description": Product.description,
         "price": Product.price,
         "stock": Product.stock,
         "category_id": Product.category_id,
@@ -24,7 +24,7 @@ class ProductRepository(BaseRepository[Product]):
     def list_products(
         self,
         query: ProductQueryResource,
-    ) -> tuple[list[Product], int]:
+    ) -> tuple[list[Product], bool]:
         filters = []
 
         # Search by name or description
@@ -48,26 +48,49 @@ class ProductRepository(BaseRepository[Product]):
         if query.max_price is not None:
             filters.append(Product.price <= query.max_price)
 
-        # Count before pagination
-        total = self.count(filters=filters)
-
         # Sorting
-        sort_column = self.SORTABLE_COLUMNS.get(
-            (query.sort_column_by or "id").lower()
-        )
+        sort_name = (query.sort_column_by or "id").lower()
+        sort_column = self.SORTABLE_COLUMNS.get(sort_name)
+        if sort_column is None:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail=f"Unsupported sort column: {query.sort_column_by}",
+            )
 
-        order = (
-            asc(sort_column)
-            if query.is_sort_column_ascending
-            else desc(sort_column)
+        cursor_value, cursor_id = self._decode_cursor(
+            query.cursor,
+            sort_name,
+            query.is_sort_column_ascending,
+            {"created_at", "updated_at"},
         )
+        if cursor_value is not None:
+            comparison = (
+                sort_column > cursor_value
+                if query.is_sort_column_ascending
+                else sort_column < cursor_value
+            )
+            if sort_name == "id":
+                filters.append(comparison)
+            else:
+                filters.append(
+                    or_(
+                        comparison,
+                        and_(sort_column == cursor_value, Product.id > cursor_id),
+                    )
+                )
 
-        # Pagination
-        items = self.find_list(
+        primary_order = (
+            asc(sort_column) if query.is_sort_column_ascending else desc(sort_column)
+        )
+        order_by = [primary_order]
+        if sort_name != "id":
+            order_by.append(asc(Product.id))
+
+        rows = self.find_list(
             filters=filters,
-            order_by=[order, asc(Product.created_at)],
-            skip=(query.page - 1) * query.page_size,
-            limit=query.page_size,
+            order_by=order_by,
+            limit=query.page_size + 1,
         )
+        has_more = len(rows) > query.page_size
 
-        return items, total
+        return rows[:query.page_size], has_more
