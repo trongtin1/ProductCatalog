@@ -6,10 +6,18 @@ T = TypeVar("T")
 
 
 class QueryResource(BaseModel):
+    cursor: Optional[str] = Field(
+        default=None,
+        description="Opaque cursor returned by the previous request",
+    )
+    page_size: int = Field(
+        default=10,
+        ge=1,
+        le=100,
+        description="Number of items to return",
+    )
     sort_column_by: str = Field(default="id", description="Column name to sort by")
     is_sort_column_ascending: bool = Field(default=True, description="True for ascending, False for descending")
-    page: int = Field(default=1, ge=1, description="Page number (starts from 1)")
-    page_size: int = Field(default=10, ge=1, le=100, description="Number of items per page")
     search_term: Optional[str] = Field(default=None, description="Search keyword")
 
     model_config = ConfigDict(extra="ignore")

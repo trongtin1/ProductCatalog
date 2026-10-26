@@ -7,6 +7,7 @@ from app.schemas.category import (
     CategoryCreate,
     CategoryUpdate,
     CategoryQueryResource,
+    PaginatedCategoriesResponse,
 )
 from app.schemas.base import Result
 from app.services.category import CategoryService
@@ -14,7 +15,7 @@ from app.services.category import CategoryService
 router = APIRouter()
 
 
-@router.get("/", response_model=Result[list[Category]])
+@router.get("/", response_model=Result[PaginatedCategoriesResponse])
 def list_categories(
     response: Response,
     query: CategoryQueryResource = Depends(),
