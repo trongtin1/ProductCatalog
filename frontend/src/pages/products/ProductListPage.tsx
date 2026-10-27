@@ -357,8 +357,8 @@ export const ProductListPage: React.FC = () => {
       {data && (
         <div style={{ marginTop: 16 }}>
           <Pagination
-            page={data.page}
-            pageSize={data.page_size}
+            page={filter.page}
+            pageSize={filter.pageSize}
             total={data.total}
             totalPages={data.total_pages}
             onPageChange={filter.onPageChange}

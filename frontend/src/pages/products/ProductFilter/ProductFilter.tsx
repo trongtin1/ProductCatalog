@@ -52,6 +52,9 @@ export const ProductFilter: React.FC<ProductFilterProps> = ({
       localMax !== "" && !isNaN(Number(localMax))
         ? Number(localMax)
         : undefined;
+    if (minVal === minPrice && maxVal === maxPrice) {
+      return;
+    }
     onPriceRangeChange(minVal, maxVal);
   };
 
