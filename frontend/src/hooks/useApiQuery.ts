@@ -2,6 +2,7 @@ import {
   useQuery,
   useMutation,
   useQueryClient,
+  keepPreviousData,
   type QueryKey,
   type UseQueryOptions,
   type UseMutationOptions,
@@ -93,6 +94,7 @@ export function useFetchPaginatedData<
       return response.data
     },
     staleTime: 60_000,
+    placeholderData: keepPreviousData,
     ...options,
   })
 }
