@@ -9,22 +9,19 @@ import type {
   PaginatedProductsResponse,
 } from '../models/product'
 
-// Separate axios instance for multipart/form-data (no fixed Content-Type header)
-import axiosRaw from 'axios'
-
-const rawBaseUrl = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api/v1` : 'http://localhost:8000/api/v1')
-
-const uploadInstance = axiosRaw.create({
-  baseURL: rawBaseUrl,
-  timeout: 30000,
-})
-uploadInstance.interceptors.response.use(
-  (response) => response.data,
-  (error) => {
-    if (error.response?.data) return Promise.reject(error.response.data)
-    return Promise.reject(error)
-  }
-)
+const toFormData = (
+  data: ProductCreate | ProductUpdate,
+  file?: File | null,
+): FormData => {
+  const formData = new FormData()
+  Object.entries(data).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      formData.append(key, String(value))
+    }
+  })
+  if (file) formData.append('file', file)
+  return formData
+}
 
 export const ProductService = {
   // Get paginated products
@@ -53,11 +50,13 @@ export const ProductService = {
   // Create product
   create: async (
     data: ProductCreate,
+    file?: File | null,
   ): Promise<Result<Product>> => {
     return await axios({
       method: 'post',
       url: '/products/',
-      data,
+      data: toFormData(data, file),
+      headers: { 'Content-Type': 'multipart/form-data' },
     })
   },
 
@@ -65,11 +64,13 @@ export const ProductService = {
   update: async (
     id: number,
     data: ProductUpdate,
+    file?: File | null,
   ): Promise<Result<Product>> => {
     return await axios({
       method: 'patch',
       url: `/products/${id}`,
-      data,
+      data: toFormData(data, file),
+      headers: { 'Content-Type': 'multipart/form-data' },
     })
   },
 
@@ -83,13 +84,4 @@ export const ProductService = {
     })
   },
 
-  // Upload product image → POST /products/{id}/image (multipart/form-data)
-  uploadImage: async (
-    id: number,
-    file: File,
-  ): Promise<Result<Product>> => {
-    const formData = new FormData()
-    formData.append('file', file)
-    return uploadInstance.post(`/products/${id}/image`, formData)
-  },
 }

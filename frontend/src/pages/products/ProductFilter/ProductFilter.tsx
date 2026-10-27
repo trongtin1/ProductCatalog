@@ -17,6 +17,7 @@ export const ProductFilter: React.FC<ProductFilterProps> = ({
   onPriceRangeChange,
   onReset,
   onAddNew,
+  canAdd = true,
   className = "",
 }) => {
   const { data: categories = [], isLoading: isLoadingCategories } =
@@ -86,9 +87,11 @@ export const ProductFilter: React.FC<ProductFilterProps> = ({
             onChangeText={onSearchChange}
           />
         </div>
-        <Button variant="primary" onClick={onAddNew} icon="+">
-          Thêm sản phẩm mới
-        </Button>
+        {canAdd && (
+          <Button variant="primary" onClick={onAddNew} icon="+">
+            Thêm sản phẩm mới
+          </Button>
+        )}
       </div>
 
       <div className="product-filter-bottom">

@@ -1,4 +1,5 @@
 import logging
+import time
 from typing import Optional
 import redis
 from app.core import config
@@ -6,25 +7,36 @@ from app.core import config
 logger = logging.getLogger(__name__)
 
 _redis_client: Optional[redis.Redis] = None
+_last_attempt_time: float = 0.0
+_COOLDOWN_SECONDS: float = 30.0
 
 
 def get_redis_client() -> Optional[redis.Redis]:
-    global _redis_client
-    if _redis_client is None:
-        try:
-            _redis_client = redis.from_url(
-                config.get_redis_url(),
-                decode_responses=True,
-                socket_timeout=1.0,
-                socket_connect_timeout=1.0,
-            )
-            # Test connection
-            _redis_client.ping()
-            logger.info("Connected to Redis successfully.")
-        except Exception as e:
-            logger.warning("Redis is not available: %s. Proceeding without caching.", e)
-            _redis_client = None
-    return _redis_client
+    global _redis_client, _last_attempt_time
+    if _redis_client is not None:
+        return _redis_client
+
+    now = time.time()
+    if now - _last_attempt_time < _COOLDOWN_SECONDS:
+        return None
+
+    _last_attempt_time = now
+    try:
+        client = redis.from_url(
+            config.get_redis_url(),
+            decode_responses=True,
+            socket_timeout=1.0,
+            socket_connect_timeout=1.0,
+        )
+        # Test connection
+        client.ping()
+        _redis_client = client
+        logger.info("Connected to Redis successfully.")
+        return _redis_client
+    except Exception as e:
+        logger.warning("Redis is not available: %s. Proceeding without caching.", e)
+        _redis_client = None
+        return None
 
 
 class RedisCacheService:

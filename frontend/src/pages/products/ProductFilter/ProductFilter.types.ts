@@ -8,5 +8,6 @@ export interface ProductFilterProps {
   onPriceRangeChange: (minPrice?: number, maxPrice?: number) => void
   onReset: () => void
   onAddNew: () => void
+  canAdd?: boolean
   className?: string
 }

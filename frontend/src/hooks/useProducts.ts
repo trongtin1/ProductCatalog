@@ -57,9 +57,9 @@ export function useProduct(id: number) {
 
 // Tạo sản phẩm
 export function useCreateProduct() {
-  return useCreateData<Product, ProductCreate>(
+  return useCreateData<Product, { data: ProductCreate; file?: File | null }>(
     productKeys.lists(),
-    ProductService.create,
+    ({ data, file }) => ProductService.create(data, file),
   )
 }
 
@@ -69,10 +69,10 @@ export function useUpdateProduct() {
 
   return useUpdateData<
     Product,
-    { id: number; data: ProductUpdate }
+    { id: number; data: ProductUpdate; file?: File | null }
   >(
     productKeys.lists(),
-    ({ id, data }) => ProductService.update(id, data),
+    ({ id, data, file }) => ProductService.update(id, data, file),
     {
       onSuccess: (product) => {
         queryClient.setQueryData(

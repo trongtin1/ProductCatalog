@@ -1,7 +1,10 @@
 import json
+import logging
 import math
 
+from fastapi import UploadFile
 from fastapi import status
+from minio.error import InvalidResponseError, S3Error
 
 from app.models.category import Category
 from app.models.product import Product
@@ -18,6 +21,17 @@ from app.schemas.product import (
 )
 from app.schemas.base import Result
 from app.core.redis import RedisCacheService
+from app.core.minio import upload_image
+
+logger = logging.getLogger(__name__)
+
+_ALLOWED_IMAGE_TYPES = {
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/webp": ".webp",
+    "image/gif": ".gif",
+}
+_MAX_IMAGE_SIZE = 5 * 1024 * 1024
 
 
 class ProductService:
@@ -178,9 +192,42 @@ class ProductService:
             False,
         )
 
-    def create_product(
+    async def _upload_product_image(
+        self,
+        file: UploadFile | None,
+    ) -> Result[str] | None:
+        if file is None:
+            return None
+
+        extension = _ALLOWED_IMAGE_TYPES.get(file.content_type or "")
+        if extension is None:
+            return Result.failure(
+                message="Chỉ chấp nhận ảnh JPEG, PNG, WebP hoặc GIF",
+                status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            )
+
+        file_data = await file.read()
+        if len(file_data) > _MAX_IMAGE_SIZE:
+            return Result.failure(
+                message="Kích thước file không được vượt quá 5 MB",
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            )
+
+        try:
+            image_url = upload_image(file_data, file.content_type or "", extension)
+        except (InvalidResponseError, OSError, S3Error, ValueError):
+            logger.exception("Failed to upload product image")
+            return Result.failure(
+                message="Không thể upload ảnh, vui lòng thử lại",
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        return Result.success(data=image_url)
+
+    async def create_product(
         self,
         product_in: ProductCreate,
+        file: UploadFile | None = None,
     ) -> Result[ProductResponse]:
         category = self.category_repo.find_one(
             filters=[
@@ -197,6 +244,17 @@ class ProductService:
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
 
+        image_result = await self._upload_product_image(file)
+        if image_result is not None and not image_result.is_success:
+            return Result.failure(
+                message=image_result.message,
+                status_code=image_result.status_code,
+            )
+        if image_result is not None:
+            product_in = product_in.model_copy(
+                update={"image_url": image_result.data}
+            )
+
         product = self.product_repo.create(product_in)
 
         RedisCacheService.invalidate_pattern("products:*")
@@ -207,10 +265,11 @@ class ProductService:
             status_code=status.HTTP_201_CREATED,
         )
 
-    def update_product(
+    async def update_product(
         self,
         product_id: int,
         product_up: ProductUpdate,
+        file: UploadFile | None = None,
     ) -> Result[ProductResponse]:
         product = self.product_repo.find_one(
             filters=[Product.id == product_id]
@@ -241,6 +300,17 @@ class ProductService:
                     status_code=status.HTTP_400_BAD_REQUEST,
                 )
 
+        image_result = await self._upload_product_image(file)
+        if image_result is not None and not image_result.is_success:
+            return Result.failure(
+                message=image_result.message,
+                status_code=image_result.status_code,
+            )
+        if image_result is not None:
+            product_up = product_up.model_copy(
+                update={"image_url": image_result.data}
+            )
+
         updated = self.product_repo.update(
             product,
             product_up,
@@ -253,12 +323,13 @@ class ProductService:
             message="Product updated successfully",
         )
 
-    def patch_product(
+    async def patch_product(
         self,
         product_id: int,
         product_patch: ProductUpdate,
+        file: UploadFile | None = None,
     ) -> Result[ProductResponse]:
-        return self.update_product(product_id, product_patch)
+        return await self.update_product(product_id, product_patch, file)
 
     def delete_product(
         self,

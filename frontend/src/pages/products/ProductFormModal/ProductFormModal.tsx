@@ -14,8 +14,6 @@ import {
 
 import { useCategories } from "../../../hooks/useCategories";
 import { useCreateProduct, useUpdateProduct } from "../../../hooks/useProducts";
-import { ProductService } from "../../../services/productApi";
-
 import type {
   Product,
   ProductCreate,
@@ -48,7 +46,7 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
   // imageUrl state – separate from the form to avoid HTMLInputElement type mismatch
   const [imageUrl, setImageUrl] = useState<string>(product?.image_url ?? "");
   const [pendingFile, setPendingFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
+  const [uploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
   const initialValues: FormValues = {
@@ -64,35 +62,10 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
     label: category.name,
   }));
 
-  /**
-   * Handle file selection.
-   * - Edit mode: upload immediately to get the final URL.
-   * - Create mode: store the file temporarily; upload after the product is created.
-   */
   const handleUpload = async (file: File) => {
     setUploadError(null);
-
-    if (isEdit && product) {
-      // Upload now and update image_url state with the returned URL
-      setUploading(true);
-      try {
-        const result = await ProductService.uploadImage(product.id, file);
-        if (result.is_success && result.data?.image_url) {
-          setImageUrl(result.data.image_url);
-          toast.success("Ảnh đã được cập nhật");
-        } else {
-          setUploadError(result.message || "Upload thất bại");
-        }
-      } catch {
-        setUploadError("Không thể upload ảnh, vui lòng thử lại");
-      } finally {
-        setUploading(false);
-      }
-    } else {
-      // Create mode: preview locally, upload after product is created
-      setPendingFile(file);
-      setImageUrl(URL.createObjectURL(file));
-    }
+    setPendingFile(file);
+    setImageUrl(URL.createObjectURL(file));
   };
 
   const handleFinish = async (values: FormValues) => {
@@ -110,10 +83,13 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
           price,
           stock,
           category_id: categoryId,
-          image_url: imageUrl || null,
         };
 
-        await updateMutation.mutateAsync({ id: product.id, data: payload });
+        await updateMutation.mutateAsync({
+          id: product.id,
+          data: payload,
+          file: pendingFile,
+        });
         toast.success(`Cập nhật sản phẩm "${payload.name}" thành công!`);
       } else {
         // Step 1: create product (image_url left null for now)
@@ -123,24 +99,9 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
           price,
           stock,
           category_id: categoryId,
-          image_url: null,
         };
 
-        // mutateAsync returns Product directly (Result unwrapped by useCreateData)
-        const createdProduct = await createMutation.mutateAsync(payload);
-
-        // Step 2: upload pending image if any
-        if (pendingFile && createdProduct.id) {
-          setUploading(true);
-          try {
-            await ProductService.uploadImage(createdProduct.id, pendingFile);
-          } catch {
-            // Non-fatal: product was created; warn but continue
-            toast.error("Sản phẩm đã tạo nhưng upload ảnh thất bại");
-          } finally {
-            setUploading(false);
-          }
-        }
+        await createMutation.mutateAsync({ data: payload, file: pendingFile });
 
         toast.success(`Thêm mới sản phẩm "${payload.name}" thành công!`);
       }

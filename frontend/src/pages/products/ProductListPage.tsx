@@ -13,12 +13,14 @@ import {
   useProductFilters,
   useDeleteProduct,
 } from "../../hooks/useProducts";
+import { useAuth } from "../../context";
 import type { Product } from "../../models/product";
 import { ProductFilter } from "./ProductFilter/ProductFilter";
 import { ProductDetailModal } from "./ProductDetailModal/ProductDetailModal";
 import { ProductFormModal } from "./ProductFormModal/ProductFormModal";
 
 export const ProductListPage: React.FC = () => {
+  const { isAdmin } = useAuth();
   const filter = useProductFilters();
   const { data, isLoading, isError, error, refetch } = useProducts(
     filter.query,
@@ -217,7 +219,7 @@ export const ProductListPage: React.FC = () => {
     {
       key: "actions",
       title: "Thao tác",
-      width: 160,
+      width: isAdmin ? 160 : 80,
       align: "right",
       render: (_, record) => (
         <div style={{ display: "inline-flex", gap: 6 }}>
@@ -232,28 +234,32 @@ export const ProductListPage: React.FC = () => {
           >
             Xem
           </Button>
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleOpenEdit(record);
-            }}
-            title="Chỉnh sửa"
-          >
-            Sửa
-          </Button>
-          <Button
-            size="sm"
-            variant="danger"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleOpenDelete(record);
-            }}
-            title="Xóa sản phẩm"
-          >
-            Xóa
-          </Button>
+          {isAdmin && (
+            <>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleOpenEdit(record);
+                }}
+                title="Chỉnh sửa"
+              >
+                Sửa
+              </Button>
+              <Button
+                size="sm"
+                variant="danger"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleOpenDelete(record);
+                }}
+                title="Xóa sản phẩm"
+              >
+                Xóa
+              </Button>
+            </>
+          )}
         </div>
       ),
     },
@@ -306,6 +312,7 @@ export const ProductListPage: React.FC = () => {
         }}
         onReset={filter.resetFilters}
         onAddNew={handleOpenCreate}
+        canAdd={isAdmin}
       />
 
       {/* Error state */}
@@ -372,8 +379,8 @@ export const ProductListPage: React.FC = () => {
         isOpen={isDetailOpen}
         product={selectedProduct}
         onClose={() => setIsDetailOpen(false)}
-        onEdit={(prod) => handleOpenEdit(prod)}
-        onDelete={(prod) => handleOpenDelete(prod)}
+        onEdit={isAdmin ? (prod) => handleOpenEdit(prod) : undefined}
+        onDelete={isAdmin ? (prod) => handleOpenDelete(prod) : undefined}
       />
 
       <ProductFormModal

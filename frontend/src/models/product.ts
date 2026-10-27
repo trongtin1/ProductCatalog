@@ -13,8 +13,10 @@ export interface ProductBase {
   image_url: string | null
 }
 
-// ProductCreate(ProductBase)
-export type ProductCreate = ProductBase
+// ProductCreate fields are sent as multipart form fields; image is uploaded as a file.
+export type ProductCreate = Omit<ProductBase, 'image_url'> & {
+  image_url?: string | null
+}
 
 // ProductUpdate (tất cả optional)
 export interface ProductUpdate {

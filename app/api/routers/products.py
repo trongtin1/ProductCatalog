@@ -1,6 +1,8 @@
-from fastapi import APIRouter, Depends, Response, UploadFile, File, HTTPException, status as http_status
+from typing import Annotated
 
-from app.api.deps import get_product_service
+from fastapi import APIRouter, Depends, File, Form, Request, Response, UploadFile
+
+from app.api.deps import get_product_service, get_current_admin
 from app.schemas.product import (
     ProductResponse,
     ProductCreate,
@@ -12,37 +14,28 @@ from app.schemas.product import (
 )
 from app.schemas.base import Result
 from app.services.product import ProductService
-from app.core.minio import upload_image
+from app.core.limiter import limiter
 
 router = APIRouter()
 
-_ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
-_MAX_SIZE = 5 * 1024 * 1024  # 5 MB
-_EXT_MAP = {
-    "image/jpeg": ".jpg",
-    "image/png": ".png",
-    "image/webp": ".webp",
-    "image/gif": ".gif",
-}
-
-
 @router.get("/", response_model=Result[PaginatedProductsResponse])
+@limiter.limit("120/minute")
 def list_products(
+    request: Request,
     response: Response,
     query: ProductQueryResource = Depends(),
     service: ProductService = Depends(get_product_service),
 ):
     result, is_cache_hit = service.list_products(query)
-
-    response.headers["X-Cache"] = (
-        "HIT" if is_cache_hit else "MISS"
-    )
+    response.headers["X-Cache"] = "HIT" if is_cache_hit else "MISS"
     response.status_code = result.status_code
     return result
 
 
 @router.get("/cursor", response_model=Result[CursorPaginatedProductsResponse])
+@limiter.limit("120/minute")
 def list_products_by_cursor(
+    request: Request,
     response: Response,
     query: CursorProductQueryResource = Depends(),
     service: ProductService = Depends(get_product_service),
@@ -55,99 +48,116 @@ def list_products_by_cursor(
 
 
 @router.get("/{product_id}", response_model=Result[ProductResponse])
+@limiter.limit("120/minute")
 def get_product(
+    request: Request,
     product_id: int,
     response: Response,
     service: ProductService = Depends(get_product_service),
 ):
     result, is_cache_hit = service.get_product(product_id)
-
-    response.headers["X-Cache"] = (
-        "HIT" if is_cache_hit else "MISS"
-    )
+    response.headers["X-Cache"] = "HIT" if is_cache_hit else "MISS"
     response.status_code = result.status_code
     return result
 
 
 @router.post("/", response_model=Result[ProductResponse])
-def create_product(
-    product_in: ProductCreate,
+@limiter.limit("60/minute")
+async def create_product(
+    request: Request,
     response: Response,
+    name: Annotated[str, Form(...)],
+    price: Annotated[float, Form(...)],
+    category_id: Annotated[int, Form(...)],
+    description: Annotated[str | None, Form()] = None,
+    stock: Annotated[int, Form()] = 0,
+    file: Annotated[UploadFile | None, File()] = None,
     service: ProductService = Depends(get_product_service),
+    _: str = Depends(get_current_admin),
 ):
-    result = service.create_product(product_in)
+    result = await service.create_product(
+        ProductCreate(
+            name=name,
+            description=description,
+            price=price,
+            stock=stock,
+            category_id=category_id,
+        ),
+        file,
+    )
     response.status_code = result.status_code
     return result
 
 
 @router.put("/{product_id}", response_model=Result[ProductResponse])
-def update_product(
+@limiter.limit("60/minute")
+async def update_product(
+    request: Request,
     product_id: int,
-    product_up: ProductUpdate,
     response: Response,
+    name: Annotated[str | None, Form()] = None,
+    description: Annotated[str | None, Form()] = None,
+    price: Annotated[float | None, Form()] = None,
+    stock: Annotated[int | None, Form()] = None,
+    category_id: Annotated[int | None, Form()] = None,
+    file: Annotated[UploadFile | None, File()] = None,
     service: ProductService = Depends(get_product_service),
+    _: str = Depends(get_current_admin),
 ):
-    result = service.update_product(product_id, product_up)
+    result = await service.update_product(
+        product_id,
+        ProductUpdate(
+            name=name,
+            description=description,
+            price=price,
+            stock=stock,
+            category_id=category_id,
+        ),
+        file,
+    )
     response.status_code = result.status_code
     return result
 
 
 @router.patch("/{product_id}", response_model=Result[ProductResponse])
-def patch_product(
+@limiter.limit("60/minute")
+async def patch_product(
+    request: Request,
     product_id: int,
-    product_patch: ProductUpdate,
     response: Response,
+    name: Annotated[str | None, Form()] = None,
+    description: Annotated[str | None, Form()] = None,
+    price: Annotated[float | None, Form()] = None,
+    stock: Annotated[int | None, Form()] = None,
+    category_id: Annotated[int | None, Form()] = None,
+    file: Annotated[UploadFile | None, File()] = None,
     service: ProductService = Depends(get_product_service),
+    _: str = Depends(get_current_admin),
 ):
-    result = service.patch_product(product_id, product_patch)
+    result = await service.patch_product(
+        product_id,
+        ProductUpdate(
+            name=name,
+            description=description,
+            price=price,
+            stock=stock,
+            category_id=category_id,
+        ),
+        file,
+    )
     response.status_code = result.status_code
     return result
 
 
 @router.delete("/{product_id}", response_model=Result[None])
+@limiter.limit("60/minute")
 def delete_product(
+    request: Request,
     product_id: int,
     response: Response,
     service: ProductService = Depends(get_product_service),
+    _: str = Depends(get_current_admin),
 ):
     result = service.delete_product(product_id)
-    response.status_code = result.status_code
-    return result
-
-
-@router.post("/{product_id}/image", response_model=Result[ProductResponse])
-async def upload_product_image(
-    product_id: int,
-    response: Response,
-    file: UploadFile = File(...),
-    service: ProductService = Depends(get_product_service),
-):
-    """Upload an image for a product and update its image_url."""
-    if file.content_type not in _ALLOWED_TYPES:
-        raise HTTPException(
-            status_code=http_status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            detail="Chỉ chấp nhận ảnh JPEG, PNG, WebP hoặc GIF",
-        )
-
-    file_data = await file.read()
-    if len(file_data) > _MAX_SIZE:
-        raise HTTPException(
-            status_code=http_status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail="Kích thước file không được vượt quá 5 MB",
-        )
-
-    try:
-        extension = _EXT_MAP[file.content_type]
-        image_url = upload_image(file_data, file.content_type, extension)
-    except Exception:
-        raise HTTPException(
-            status_code=http_status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Không thể upload ảnh, vui lòng thử lại",
-        )
-
-    result = service.update_product(
-        product_id,
-        ProductUpdate(image_url=image_url),
-    )
     response.status_code = result.status_code
     return result

@@ -10,10 +10,23 @@ const instance = axios.create({
   timeout: 15000,
 })
 
+// Attach JWT token from localStorage on every request
+instance.interceptors.request.use((config) => {
+  const token = localStorage.getItem('admin_token')
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
+
 // Unpack response.data so callers directly receive Result<T>
 instance.interceptors.response.use(
   (response) => response.data,
   (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('admin_token')
+      window.dispatchEvent(new Event('auth:unauthorized'))
+    }
     if (error.response?.data) {
       return Promise.reject(error.response.data)
     }
