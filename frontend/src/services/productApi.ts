@@ -9,6 +9,23 @@ import type {
   PaginatedProductsResponse,
 } from '../models/product'
 
+// Separate axios instance for multipart/form-data (no fixed Content-Type header)
+import axiosRaw from 'axios'
+
+const rawBaseUrl = import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api/v1` : 'http://localhost:8000/api/v1')
+
+const uploadInstance = axiosRaw.create({
+  baseURL: rawBaseUrl,
+  timeout: 30000,
+})
+uploadInstance.interceptors.response.use(
+  (response) => response.data,
+  (error) => {
+    if (error.response?.data) return Promise.reject(error.response.data)
+    return Promise.reject(error)
+  }
+)
+
 export const ProductService = {
   // Get paginated products
   getAll: async (
@@ -64,5 +81,15 @@ export const ProductService = {
       method: 'delete',
       url: `/products/${id}`,
     })
+  },
+
+  // Upload product image → POST /products/{id}/image (multipart/form-data)
+  uploadImage: async (
+    id: number,
+    file: File,
+  ): Promise<Result<Product>> => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return uploadInstance.post(`/products/${id}/image`, formData)
   },
 }

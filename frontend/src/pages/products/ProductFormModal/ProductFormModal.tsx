@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 
 import type { ProductFormModalProps } from "./ProductFormModal.types";
 
@@ -9,11 +9,12 @@ import {
   Select,
   Form,
   useToast,
+  ImageUploader,
 } from "../../../components/common";
 
 import { useCategories } from "../../../hooks/useCategories";
-
 import { useCreateProduct, useUpdateProduct } from "../../../hooks/useProducts";
+import { ProductService } from "../../../services/productApi";
 
 import type {
   Product,
@@ -37,7 +38,6 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
   const isEdit = Boolean(product);
 
   const { data: categories = [] } = useCategories();
-
   const toast = useToast();
 
   const createMutation = useCreateProduct();
@@ -45,13 +45,18 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
 
   const isLoading = createMutation.isPending || updateMutation.isPending;
 
+  // imageUrl state – separate from the form to avoid HTMLInputElement type mismatch
+  const [imageUrl, setImageUrl] = useState<string>(product?.image_url ?? "");
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
   const initialValues: FormValues = {
     name: product?.name ?? "",
     description: product?.description ?? "",
     price: product?.price !== undefined ? String(product.price) : "",
     stock: product?.stock !== undefined ? String(product.stock) : "0",
     category_id: product?.category_id ? String(product.category_id) : "",
-    image_url: product?.image_url ?? "",
   };
 
   const categoryOptions = categories.map((category) => ({
@@ -59,13 +64,43 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
     label: category.name,
   }));
 
+  /**
+   * Handle file selection.
+   * - Edit mode: upload immediately to get the final URL.
+   * - Create mode: store the file temporarily; upload after the product is created.
+   */
+  const handleUpload = async (file: File) => {
+    setUploadError(null);
+
+    if (isEdit && product) {
+      // Upload now and update image_url state with the returned URL
+      setUploading(true);
+      try {
+        const result = await ProductService.uploadImage(product.id, file);
+        if (result.is_success && result.data?.image_url) {
+          setImageUrl(result.data.image_url);
+          toast.success("Ảnh đã được cập nhật");
+        } else {
+          setUploadError(result.message || "Upload thất bại");
+        }
+      } catch {
+        setUploadError("Không thể upload ảnh, vui lòng thử lại");
+      } finally {
+        setUploading(false);
+      }
+    } else {
+      // Create mode: preview locally, upload after product is created
+      setPendingFile(file);
+      setImageUrl(URL.createObjectURL(file));
+    }
+  };
+
   const handleFinish = async (values: FormValues) => {
     const name = String(values.name ?? "").trim();
     const description = String(values.description ?? "").trim();
     const price = Number(values.price);
     const stock = Number(values.stock);
     const categoryId = Number(values.category_id);
-    const imageUrl = String(values.image_url ?? "").trim();
 
     try {
       if (isEdit && product) {
@@ -78,23 +113,34 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
           image_url: imageUrl || null,
         };
 
-        await updateMutation.mutateAsync({
-          id: product.id,
-          data: payload,
-        });
-
+        await updateMutation.mutateAsync({ id: product.id, data: payload });
         toast.success(`Cập nhật sản phẩm "${payload.name}" thành công!`);
       } else {
+        // Step 1: create product (image_url left null for now)
         const payload: ProductCreate = {
           name,
           description: description || null,
           price,
           stock,
           category_id: categoryId,
-          image_url: imageUrl || null,
+          image_url: null,
         };
 
-        await createMutation.mutateAsync(payload);
+        // mutateAsync returns Product directly (Result unwrapped by useCreateData)
+        const createdProduct = await createMutation.mutateAsync(payload);
+
+        // Step 2: upload pending image if any
+        if (pendingFile && createdProduct.id) {
+          setUploading(true);
+          try {
+            await ProductService.uploadImage(createdProduct.id, pendingFile);
+          } catch {
+            // Non-fatal: product was created; warn but continue
+            toast.error("Sản phẩm đã tạo nhưng upload ảnh thất bại");
+          } finally {
+            setUploading(false);
+          }
+        }
 
         toast.success(`Thêm mới sản phẩm "${payload.name}" thành công!`);
       }
@@ -104,7 +150,6 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
     } catch (err: unknown) {
       const errorMessage =
         err instanceof Error ? err.message : "Có lỗi xảy ra khi lưu sản phẩm";
-
       toast.error(errorMessage);
     }
   };
@@ -113,11 +158,7 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
     <Form
       initialValues={initialValues}
       onFinish={handleFinish}
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: 2,
-      }}
+      style={{ display: "flex", flexDirection: "column", gap: 2 }}
     >
       <Form.Item
         name="name"
@@ -136,26 +177,13 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
         />
       </Form.Item>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: 12,
-        }}
-      >
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <Form.Item
           name="category_id"
           label="Danh mục"
           rules={[
-            {
-              required: true,
-              message: "Vui lòng chọn danh mục",
-            },
-            {
-              type: "number",
-              min: 1,
-              message: "Vui lòng chọn danh mục hợp lệ",
-            },
+            { required: true, message: "Vui lòng chọn danh mục" },
+            { type: "number", min: 1, message: "Vui lòng chọn danh mục hợp lệ" },
           ]}
         >
           <Select
@@ -169,15 +197,8 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
           name="stock"
           label="Số lượng tồn kho"
           rules={[
-            {
-              required: true,
-              message: "Vui lòng nhập số lượng tồn kho",
-            },
-            {
-              type: "integer",
-              min: 0,
-              message: "Số lượng tồn kho phải là số nguyên ≥ 0",
-            },
+            { required: true, message: "Vui lòng nhập số lượng tồn kho" },
+            { type: "integer", min: 0, message: "Số lượng tồn kho phải là số nguyên ≥ 0" },
           ]}
         >
           <Input
@@ -194,15 +215,8 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
         name="price"
         label="Giá bán (VNĐ)"
         rules={[
-          {
-            required: true,
-            message: "Vui lòng nhập giá sản phẩm",
-          },
-          {
-            type: "number",
-            min: 0.01,
-            message: "Giá sản phẩm phải lớn hơn 0",
-          },
+          { required: true, message: "Vui lòng nhập giá sản phẩm" },
+          { type: "number", min: 0.01, message: "Giá sản phẩm phải lớn hơn 0" },
         ]}
       >
         <Input
@@ -214,21 +228,28 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
         />
       </Form.Item>
 
-      <Form.Item
-        name="image_url"
-        label="URL hình ảnh"
-        rules={[
-          {
-            type: "url",
-            message: "URL hình ảnh không hợp lệ",
-          },
-        ]}
-      >
-        <Input
-          placeholder="https://example.com/image.jpg"
+      {/* Image upload – managed outside the Form to avoid event type conflicts */}
+      <div>
+        <label
+          style={{
+            display: "block",
+            fontSize: "0.875rem",
+            fontWeight: 500,
+            marginBottom: 6,
+            color: "var(--color-text)",
+          }}
+        >
+          Hình ảnh sản phẩm
+        </label>
+        <ImageUploader
+          value={imageUrl}
+          onChange={setImageUrl}
+          onUpload={handleUpload}
           disabled={isLoading}
+          uploading={uploading}
+          error={uploadError}
         />
-      </Form.Item>
+      </div>
 
       <Form.Item name="description" label="Mô tả sản phẩm">
         <textarea
@@ -255,13 +276,17 @@ const ProductFormContent: React.FC<ProductFormContentProps> = ({
         <Button
           variant="secondary"
           onClick={onClose}
-          disabled={isLoading}
+          disabled={isLoading || uploading}
           type="button"
         >
           Hủy
         </Button>
 
-        <Button variant="primary" type="submit" isLoading={isLoading}>
+        <Button
+          variant="primary"
+          type="submit"
+          isLoading={isLoading || uploading}
+        >
           {isEdit ? "Lưu thay đổi" : "Thêm mới"}
         </Button>
       </div>

@@ -35,6 +35,13 @@ def get_redis_url():
         return f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
     return f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
 
+MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT", "localhost:9000")
+MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY", "minioadmin")
+MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY", "minioadmin")
+MINIO_BUCKET = os.getenv("MINIO_BUCKET", "product-images")
+MINIO_SECURE = os.getenv("MINIO_SECURE", "false").lower() == "true"
+MINIO_PUBLIC_URL = os.getenv("MINIO_PUBLIC_URL", "http://localhost:9000")
+
 cors_env = os.getenv("BACKEND_CORS_ORIGINS")
 try:
     BACKEND_CORS_ORIGINS = json.loads(cors_env)
