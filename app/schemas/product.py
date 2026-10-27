@@ -14,12 +14,14 @@ class ProductQueryResource(QueryResource):
 class CursorProductQueryResource(BaseModel):
     cursor: Optional[str] = Field(default=None, description="Cursor from the previous cursor request")
     page_size: int = Field(default=10, ge=1, le=100)
-    sort_column_by: str = Field(default="id")
-    is_sort_column_ascending: bool = Field(default=True)
-    search_term: Optional[str] = None
+    search: Optional[str] = None
+    sort_by: str = Field(default="id")
+    order: str = Field(default="asc")
     category_id: Optional[int] = None
     min_price: Optional[float] = Field(default=None, ge=0)
     max_price: Optional[float] = Field(default=None, ge=0)
+
+    model_config = ConfigDict(extra="ignore")
 
 
 class ProductBase(BaseModel):

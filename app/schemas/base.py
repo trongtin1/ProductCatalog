@@ -13,9 +13,9 @@ class QueryResource(BaseModel):
         le=100,
         description="Number of items to return",
     )
-    sort_column_by: str = Field(default="id", description="Column name to sort by")
-    is_sort_column_ascending: bool = Field(default=True, description="True for ascending, False for descending")
-    search_term: Optional[str] = Field(default=None, description="Search keyword")
+    search: Optional[str] = Field(default=None, description="Search keyword")
+    sort_by: str = Field(default="id", description="Column name to sort by")
+    order: str = Field(default="asc", description="Sort order: 'asc' or 'desc'")
 
     model_config = ConfigDict(extra="ignore")
 

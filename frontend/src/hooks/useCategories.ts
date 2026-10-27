@@ -1,7 +1,6 @@
-
-import { useQuery } from '@tanstack/react-query'
+import { useFetchPaginatedData } from './useApiQuery'
 import { CategoryService } from '../services/categoryApi'
-import type { CategoryQueryResource } from '../models/category'
+import type { Category, CategoryQueryResource } from '../models/category'
 
 export const categoryKeys = {
   all: ['categories'] as const,
@@ -11,22 +10,16 @@ export const categoryKeys = {
 }
 
 export function useCategories(params: CategoryQueryResource = {}) {
-  return useQuery({
-    queryKey: categoryKeys.list(params),
-
-    queryFn: async () => {
-      const response = await CategoryService.getAll({
-        page_size: 100,
-        ...params,
-      })
-
-      if (!response.is_success || response.data === null) {
-        throw new Error(response.message || 'Không thể tải danh mục')
-      }
-
-      return response.data.items
+  return useFetchPaginatedData<Category, CategoryQueryResource, Category[]>(
+    categoryKeys.lists(),
+    CategoryService.getAll,
+    {
+      page_size: 100,
+      ...params,
     },
-
-    staleTime: 5 * 60 * 1000,
-  })
+    {
+      staleTime: 5 * 60 * 1000,
+      select: (data) => data.items,
+    },
+  )
 }

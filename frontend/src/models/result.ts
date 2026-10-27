@@ -8,9 +8,9 @@ export interface Result<T> {
 }
 
 export interface QueryResource {
-  sort_column_by?: string
-  is_sort_column_ascending?: boolean
   page?: number
-  page_size?: number         // default: 10, ge=1, le=100
-  search_term?: string
+  page_size?: number
+  search?: string
+  sort_by?: string
+  order?: 'asc' | 'desc'
 }

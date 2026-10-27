@@ -6,24 +6,24 @@ export class BaseFilter {
   page: number
   pageSize: number
   search: string
-  sortColumnBy: string
-  ascending: boolean
+  sortBy: string
+  order: 'asc' | 'desc'
 
   constructor(searchParams: URLSearchParams) {
     this.page = Math.max(1, Number(searchParams.get('page')) || 1)
     this.pageSize = Number(searchParams.get('page_size')) || 10
     this.search = searchParams.get('search') || ''
-    this.sortColumnBy = searchParams.get('sort_column_by') || 'id'
-    this.ascending = searchParams.get('is_sort_column_ascending') !== 'false'
+    this.sortBy = searchParams.get('sort_by') || 'id'
+    this.order = searchParams.get('order')?.toLowerCase() === 'desc' ? 'desc' : 'asc'
   }
 
   toQuery(): QueryResource {
     return {
       page: this.page,
       page_size: this.pageSize,
-      search_term: this.search || undefined,
-      sort_column_by: this.sortColumnBy,
-      is_sort_column_ascending: this.ascending,
+      search: this.search || undefined,
+      sort_by: this.sortBy,
+      order: this.order,
     }
   }
 }
@@ -87,8 +87,8 @@ export function useBaseFilters() {
   const onSortChange = useCallback(
     (column: string, isAscending: boolean) => {
       updateFilters({
-        sort_column_by: column,
-        is_sort_column_ascending: String(isAscending),
+        sort_by: column,
+        order: isAscending ? 'asc' : 'desc',
         page: 1,
       })
     },

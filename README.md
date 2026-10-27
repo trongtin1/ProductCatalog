@@ -156,7 +156,7 @@ cp .env.example .env
 
 ### 1. Categories (`/api/v1/categories`)
 
-- `GET /api/v1/categories/`: Danh sách danh mục (hỗ trợ phân trang, tìm kiếm `search_term`, `name`, `description`).
+- `GET /api/v1/categories/`: Danh sách danh mục (hỗ trợ phân trang, tìm kiếm `search`, `name`, `description`).
 - `GET /api/v1/categories/{category_id}`: Chi tiết danh mục.
 - `POST /api/v1/categories/`: Tạo danh mục mới (validate tên duy nhất).
 - `PUT /api/v1/categories/{category_id}`: Cập nhật danh mục.
@@ -166,9 +166,9 @@ cp .env.example .env
 
 - `GET /api/v1/products/`: Danh sách sản phẩm kết hợp:
   - **Phân trang:** `page` (default 1), `page_size` (default 10, max 100). Response gồm `items`, `total`, `page`, `page_size`, `total_pages`.
-  - **Tìm kiếm:** `search_term` (tìm trong name và description).
+  - **Tìm kiếm:** `search` (tìm trong name và description).
   - **Bộ lọc:** `category_id`, `min_price`, `max_price`.
-  - **Sắp xếp:** `sort_column_by` (`id`, `price`, `name`, `stock`, `category_id`, `created_at`, `updated_at`), `is_sort_column_ascending` (true/false).
+  - **Sắp xếp:** `sort_by` (`id`, `price`, `name`, `stock`, `category_id`, `created_at`, `updated_at`), `order` (`asc`/`desc`).
   - **Redis Cache:** Response kèm header `X-Cache: HIT` hoặc `X-Cache: MISS`.
 - `GET /api/v1/products/{product_id}`: Chi tiết sản phẩm (Cache Redis 60s, header `X-Cache: HIT/MISS`).
 - `POST /api/v1/products/`: Tạo sản phẩm (validate `price > 0`, `stock >= 0`, `name` không rỗng; tự động xóa cache).

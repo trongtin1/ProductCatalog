@@ -1,4 +1,3 @@
-
 import json
 import math
 
@@ -36,10 +35,9 @@ class ProductService:
     ) -> tuple[Result[PaginatedProductsResponse], bool]:
         cache_key = (
             f"products:list:page={query.page}:size={query.page_size}:"
-            f"search={query.search_term}:cat={query.category_id}:"
+            f"search={query.search}:cat={query.category_id}:"
             f"min={query.min_price}:max={query.max_price}:"
-            f"sort={query.sort_column_by}:"
-            f"asc={query.is_sort_column_ascending}"
+            f"sort={query.sort_by}:order={query.order}"
         )
 
         cached_data = RedisCacheService.get(cache_key)
@@ -97,9 +95,9 @@ class ProductService:
     ) -> tuple[Result[CursorPaginatedProductsResponse], bool]:
         cache_key = (
             f"products:cursor:cursor={query.cursor}:size={query.page_size}:"
-            f"search={query.search_term}:cat={query.category_id}:"
+            f"search={query.search}:cat={query.category_id}:"
             f"min={query.min_price}:max={query.max_price}:"
-            f"sort={query.sort_column_by}:asc={query.is_sort_column_ascending}"
+            f"sort={query.sort_by}:order={query.order}"
         )
         cached_data = RedisCacheService.get(cache_key)
         if cached_data:
@@ -117,8 +115,8 @@ class ProductService:
             next_cursor=(
                 self.product_repo.encode_cursor(
                     items[-1],
-                    (query.sort_column_by or "id").lower(),
-                    query.is_sort_column_ascending,
+                    (query.sort_by or "id").lower(),
+                    (query.order or "asc").strip().lower() != "desc",
                 )
                 if has_more and items
                 else None

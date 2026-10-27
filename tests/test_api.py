@@ -195,8 +195,8 @@ def test_products_crud_and_search_pagination():
     assert cursor_next.status_code == 200
     assert cursor_next.json()["data"]["items"][0]["id"] != cursor_data["items"][0]["id"]
 
-    # 5. Search keyword using search_term
-    search_res = client.get("/api/v1/products/?search_term=titanium")
+    # 5. Search keyword using search param
+    search_res = client.get("/api/v1/products/?search=titanium")
     assert search_res.status_code == 200
     assert search_res.json()["data"]["total"] == 1
     assert search_res.json()["data"]["items"][0]["name"] == "iPhone 15 Pro"
@@ -207,12 +207,19 @@ def test_products_crud_and_search_pagination():
     assert filter_res.json()["data"]["total"] == 1
     assert filter_res.json()["data"]["items"][0]["name"] == "iPhone 15 Pro"
 
-    # 7. Sort by price ascending using sort_column_by and is_sort_column_ascending
-    sort_res = client.get("/api/v1/products/?sort_column_by=price&is_sort_column_ascending=true")
+    # 7. Sort by price ascending using sort_by and order
+    sort_res = client.get("/api/v1/products/?sort_by=price&order=asc")
     assert sort_res.status_code == 200
     items = sort_res.json()["data"]["items"]
     assert items[0]["name"] == "Samsung Galaxy S24"
     assert items[1]["name"] == "iPhone 15 Pro"
+
+    # 7b. Sort by price descending using sort_by and order
+    sort_desc_res = client.get("/api/v1/products/?sort_by=price&order=desc")
+    assert sort_desc_res.status_code == 200
+    desc_items = sort_desc_res.json()["data"]["items"]
+    assert desc_items[0]["name"] == "iPhone 15 Pro"
+    assert desc_items[1]["name"] == "Samsung Galaxy S24"
 
     # 8. Update product (PUT)
     put_res = client.put(f"/api/v1/products/{p1_id}", json={

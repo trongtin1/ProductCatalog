@@ -339,8 +339,8 @@ export const ProductListPage: React.FC = () => {
         dataSource={data?.items || []}
         rowKey="id"
         loading={isLoading}
-        sortColumn={filter.sortColumnBy}
-        isAscending={filter.ascending}
+        sortColumn={filter.sortBy}
+        isAscending={filter.order === 'asc'}
         onSortChange={filter.onSortChange}
         onClearSort={() => filter.onSortChange("id", true)}
         emptyText={
