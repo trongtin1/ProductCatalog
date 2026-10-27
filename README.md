@@ -213,9 +213,9 @@ Hệ thống tích hợp **SlowAPI** để bảo vệ chống brute force và qu
   - **Sắp xếp:** `sort_by` (`id`, `price`, `name`, `stock`, `category_id`, `created_at`, `updated_at`), `order` (`asc`/`desc`).
   - **Redis Cache:** Response kèm header `X-Cache: HIT` hoặc `X-Cache: MISS`.
 - `GET /api/v1/products/{product_id}`: Chi tiết sản phẩm (Cache Redis 60s, header `X-Cache: HIT/MISS`).
-- `POST /api/v1/products/`: Tạo sản phẩm bằng `multipart/form-data` với các field `name`, `price`, `stock`, `category_id`, `description` và file ảnh tùy chọn ở field `file` (validate `price > 0`, `stock >= 0`, `name` không rỗng; tự động xóa cache).
-- `PUT /api/v1/products/{product_id}`: Cập nhật toàn bộ thông tin sản phẩm bằng `multipart/form-data`, hỗ trợ field `file` để upload ảnh mới.
-- `PATCH /api/v1/products/{product_id}`: Cập nhật từng phần bằng `multipart/form-data`, các field được bỏ qua nếu không gửi.
+- `POST /api/v1/products/`: Tạo sản phẩm bằng `application/json` hoặc `multipart/form-data`. Với multipart, các field gồm `name`, `price`, `stock`, `category_id`, `description` và file ảnh tùy chọn ở field `file` (validate `price > 0`, `stock >= 0`, `name` không rỗng; tự động xóa cache).
+- `PUT /api/v1/products/{product_id}`: Cập nhật thông tin sản phẩm bằng `application/json` hoặc `multipart/form-data`, hỗ trợ field `file` để upload ảnh mới.
+- `PATCH /api/v1/products/{product_id}`: Cập nhật từng phần bằng `application/json` hoặc `multipart/form-data`, các field được bỏ qua nếu không gửi.
 - `DELETE /api/v1/products/{product_id}`: Xóa sản phẩm (tự động xóa cache).
 
 ### Cursor pagination nâng cao

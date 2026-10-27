@@ -194,6 +194,10 @@ const FormRoot: React.FC<FormProps> = ({
   );
 };
 
-export const Form = Object.assign(FormRoot, {
-  Item: FormItem,
-});
+type FormComponent = React.FC<FormProps> & {
+  Item: typeof FormItem;
+};
+
+export const Form: FormComponent = (props) => <FormRoot {...props} />;
+
+Form.Item = FormItem;

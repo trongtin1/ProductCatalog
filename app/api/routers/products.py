@@ -1,6 +1,7 @@
-from typing import Annotated
+from typing import TypeVar
 
-from fastapi import APIRouter, Depends, File, Form, Request, Response, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, UploadFile
+from pydantic import BaseModel, ValidationError
 
 from app.api.deps import get_product_service, get_current_admin
 from app.schemas.product import (
@@ -17,6 +18,38 @@ from app.services.product import ProductService
 from app.core.limiter import limiter
 
 router = APIRouter()
+ProductSchema = TypeVar("ProductSchema", bound=BaseModel)
+
+
+async def _parse_product_request(
+    request: Request,
+    schema: type[ProductSchema],
+) -> tuple[ProductSchema, UploadFile | None]:
+    content_type = request.headers.get("content-type", "")
+    file: UploadFile | None = None
+
+    if content_type.startswith("multipart/form-data"):
+        form = await request.form()
+        payload = {key: value for key, value in form.items() if key != "file"}
+        candidate = form.get("file")
+        if isinstance(candidate, UploadFile):
+            file = candidate
+    else:
+        try:
+            payload = await request.json()
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=422,
+                detail="Request body must be valid JSON or multipart form data",
+            ) from exc
+
+    try:
+        return schema.model_validate(payload), file
+    except ValidationError as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=exc.errors(include_context=False),
+        ) from exc
 
 @router.get("/", response_model=Result[PaginatedProductsResponse])
 @limiter.limit("120/minute")
@@ -66,23 +99,12 @@ def get_product(
 async def create_product(
     request: Request,
     response: Response,
-    name: Annotated[str, Form(...)],
-    price: Annotated[float, Form(...)],
-    category_id: Annotated[int, Form(...)],
-    description: Annotated[str | None, Form()] = None,
-    stock: Annotated[int, Form()] = 0,
-    file: Annotated[UploadFile | None, File()] = None,
     service: ProductService = Depends(get_product_service),
     _: str = Depends(get_current_admin),
 ):
+    product_in, file = await _parse_product_request(request, ProductCreate)
     result = await service.create_product(
-        ProductCreate(
-            name=name,
-            description=description,
-            price=price,
-            stock=stock,
-            category_id=category_id,
-        ),
+        product_in,
         file,
     )
     response.status_code = result.status_code
@@ -95,24 +117,13 @@ async def update_product(
     request: Request,
     product_id: int,
     response: Response,
-    name: Annotated[str | None, Form()] = None,
-    description: Annotated[str | None, Form()] = None,
-    price: Annotated[float | None, Form()] = None,
-    stock: Annotated[int | None, Form()] = None,
-    category_id: Annotated[int | None, Form()] = None,
-    file: Annotated[UploadFile | None, File()] = None,
     service: ProductService = Depends(get_product_service),
     _: str = Depends(get_current_admin),
 ):
+    product_in, file = await _parse_product_request(request, ProductUpdate)
     result = await service.update_product(
         product_id,
-        ProductUpdate(
-            name=name,
-            description=description,
-            price=price,
-            stock=stock,
-            category_id=category_id,
-        ),
+        product_in,
         file,
     )
     response.status_code = result.status_code
@@ -125,24 +136,13 @@ async def patch_product(
     request: Request,
     product_id: int,
     response: Response,
-    name: Annotated[str | None, Form()] = None,
-    description: Annotated[str | None, Form()] = None,
-    price: Annotated[float | None, Form()] = None,
-    stock: Annotated[int | None, Form()] = None,
-    category_id: Annotated[int | None, Form()] = None,
-    file: Annotated[UploadFile | None, File()] = None,
     service: ProductService = Depends(get_product_service),
     _: str = Depends(get_current_admin),
 ):
+    product_in, file = await _parse_product_request(request, ProductUpdate)
     result = await service.patch_product(
         product_id,
-        ProductUpdate(
-            name=name,
-            description=description,
-            price=price,
-            stock=stock,
-            category_id=category_id,
-        ),
+        product_in,
         file,
     )
     response.status_code = result.status_code
