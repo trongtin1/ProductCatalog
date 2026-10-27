@@ -42,6 +42,12 @@ MINIO_BUCKET = os.getenv("MINIO_BUCKET", "product-images")
 MINIO_SECURE = os.getenv("MINIO_SECURE", "false").lower() == "true"
 MINIO_PUBLIC_URL = os.getenv("MINIO_PUBLIC_URL", "http://localhost:9000")
 
+# JWT / Auth
+SECRET_KEY = os.getenv("SECRET_KEY", "changeme-use-a-long-random-string-in-production")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
+ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
+
 cors_env = os.getenv("BACKEND_CORS_ORIGINS")
 try:
     BACKEND_CORS_ORIGINS = json.loads(cors_env)

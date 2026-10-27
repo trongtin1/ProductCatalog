@@ -11,6 +11,9 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from app.core import config as app_config
 from app.db.base import Base
 
+# Import all models so autogenerate can detect them
+from app.models import category, product, user  # noqa: F401
+
 config = context.config
 
 if config.config_file_name is not None:
