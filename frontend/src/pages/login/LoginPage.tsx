@@ -9,8 +9,8 @@ export const LoginPage: React.FC = () => {
   const navigate = useNavigate()
   const toast = useToast()
 
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
+  const [username, setUsername] = useState('admin')
+  const [password, setPassword] = useState('admin123')
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -103,4 +103,3 @@ export const LoginPage: React.FC = () => {
     </div>
   )
 }
-
