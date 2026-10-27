@@ -1,4 +1,4 @@
-
+import { useMemo } from 'react'
 import {
   useQuery,
   useMutation,
@@ -171,12 +171,15 @@ export function useProductFilters() {
     ? Number(base.searchParams.get('max_price'))
     : undefined
 
-  const query: ProductQueryResource = {
-    ...base.filters.toQuery(),
-    category_id: categoryId,
-    min_price: minPrice,
-    max_price: maxPrice,
-  }
+  const query: ProductQueryResource = useMemo(
+    () => ({
+      ...base.filters.toQuery(),
+      category_id: categoryId,
+      min_price: minPrice,
+      max_price: maxPrice,
+    }),
+    [base.filters, categoryId, minPrice, maxPrice]
+  )
 
   return {
     ...base,

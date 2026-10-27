@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import type { SearchInputProps } from './SearchInput.types'
 import { useDebounce } from '../../../hooks/useDebounce'
 import './SearchInput.css'
@@ -13,6 +13,12 @@ export const SearchInput: React.FC<SearchInputProps> = ({
 }) => {
   const [text, setText] = useState(value)
   const [prevValue, setPrevValue] = useState(value)
+  const isMountedRef = useRef(false)
+  const onChangeTextRef = useRef(onChangeText)
+
+  useEffect(() => {
+    onChangeTextRef.current = onChangeText
+  }, [onChangeText])
 
   // Adjust state during render when prop changes (React recommended pattern)
   if (value !== prevValue) {
@@ -23,10 +29,15 @@ export const SearchInput: React.FC<SearchInputProps> = ({
   const debouncedText = useDebounce(text, delay)
 
   useEffect(() => {
-    if (onChangeText) {
-      onChangeText(debouncedText)
+    if (!isMountedRef.current) {
+      isMountedRef.current = true
+      return
     }
-  }, [debouncedText, onChangeText])
+
+    if (debouncedText !== value) {
+      onChangeTextRef.current?.(debouncedText)
+    }
+  }, [debouncedText, value])
 
   return (
     <div className={`custom-search-input ${className}`}>
@@ -49,7 +60,7 @@ export const SearchInput: React.FC<SearchInputProps> = ({
           className="custom-search-clear"
           onClick={() => {
             setText('')
-            if (onChangeText) onChangeText('')
+            onChangeTextRef.current?.('')
           }}
           title="Xóa tìm kiếm"
         >
