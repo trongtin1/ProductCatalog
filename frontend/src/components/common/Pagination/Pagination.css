@@ -53,8 +53,15 @@
 }
 
 .custom-pagination-ellipsis {
-  padding: 0 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 32px;
+  padding: 0 2px;
+  font-size: 13px;
   color: var(--color-text-muted);
+  user-select: none;
 }
 
 .custom-pagination-size-select {
